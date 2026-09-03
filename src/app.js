@@ -57,7 +57,12 @@ const dom = {
   progressBar: el("progressBar"),
   progressLabel: el("progressLabel"),
   setupNotice: el("setupNotice"),
+  setupTitle: el("setupTitle"),
+  setupBody: el("setupBody"),
   setupReason: el("setupReason"),
+  noticeClose: el("noticeClose"),
+  settingsPanel: el("settingsPanel"),
+  inputPanel: el("inputPanel"),
   abbr: el("abbrText"),
   abbrBuiltin: el("abbrBuiltin"),
   engineInfo: el("engineInfo"),
@@ -75,9 +80,21 @@ const defaults = {
   nativeSpeed: false,
   splitOnNewline: false,
   extraAbbreviations: "",
+  noticeDismissed: false,
 };
 
 const state = { ...defaults, sentences: [], index: 0 };
+
+/**
+ * Served from a real host (GitHub Pages, say) rather than tools/serve.py.
+ * The Kokoro model only exists next to the local server, so a hosted copy is
+ * a system-voice tool and should say so instead of quoting a shell command.
+ */
+const IS_LOCAL_SERVER =
+  location.protocol === "file:" ||
+  /^(localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\])$/.test(location.hostname);
+
+const isSmallScreen = () => window.matchMedia("(max-width: 700px)").matches;
 
 /** Persisted UI settings; sentences and playback state are not saved. */
 function loadSettings() {
@@ -113,9 +130,36 @@ let gapTimer = null;
 let gapFrame = null;
 let gap = null; // { endsAt, durationMs, remaining }
 
+let wakeLock = null;
+
+/** Keep the phone awake while a practice run is going. */
+async function acquireWakeLock() {
+  if (wakeLock || !("wakeLock" in navigator)) return;
+  try {
+    wakeLock = await navigator.wakeLock.request("screen");
+    wakeLock.addEventListener("release", () => {
+      wakeLock = null;
+    });
+  } catch {
+    // Denied or unsupported; practice still works, the screen just dims.
+  }
+}
+
+function releaseWakeLock() {
+  if (!wakeLock) return;
+  const held = wakeLock;
+  wakeLock = null;
+  held.release().catch(() => {});
+}
+
 function setStatus(text, kind = "") {
   dom.status.textContent = text;
   dom.status.className = `status ${kind}`;
+}
+
+/** Mobile Safari refuses speech that no tap started. */
+function unlockSpeech() {
+  if (engine && typeof engine.unlock === "function") engine.unlock();
 }
 
 function isActive() {
@@ -152,6 +196,7 @@ function currentVoiceId() {
 
 async function speakSentence(index) {
   if (!engineReady || state.sentences.length === 0) return;
+  unlockSpeech();
   const bounded = Math.max(0, Math.min(index, state.sentences.length - 1));
 
   stopPlayback();
@@ -183,6 +228,7 @@ async function speakSentence(index) {
   phase = "speaking";
   setStatus("再生中");
   updateControls();
+  acquireWakeLock();
 
   playback = engine.play(clip, {
     rate: playbackRate,
@@ -226,6 +272,7 @@ function onSentenceEnd(token, clip) {
     phase = "done";
     setStatus("最後まで再生しました");
     updateControls();
+    releaseWakeLock();
     return;
   }
 
@@ -285,11 +332,16 @@ function pauseGap() {
 
 function togglePlayPause() {
   if (state.sentences.length === 0) return;
+  unlockSpeech();
 
   if (phase === "speaking") {
     playback.pause();
     phase = "paused-speaking";
-    setStatus("一時停止中");
+    setStatus(
+      engine && engine.pauseRestarts
+        ? "一時停止中（再開すると今の文を最初から読みます）"
+        : "一時停止中",
+    );
     updateControls();
     return;
   }
@@ -323,6 +375,7 @@ function togglePlayPause() {
 
 function goTo(index) {
   if (state.sentences.length === 0) return;
+  unlockSpeech();
   if (index < 0 || index >= state.sentences.length) {
     setStatus(index < 0 ? "最初の文です" : "最後の文です");
     return;
@@ -343,6 +396,7 @@ function goTo(index) {
 
 function stopAll() {
   stopPlayback();
+  releaseWakeLock();
   dom.progressWrap.hidden = true;
   setStatus("停止中");
 }
@@ -423,6 +477,7 @@ function doSplit() {
   stopPlayback();
   renderSentences();
   updateControls();
+  if (isSmallScreen() && state.sentences.length > 0) dom.inputPanel.open = false;
   setStatus(
     state.sentences.length
       ? `${state.sentences.length} 文に分割しました`
@@ -492,17 +547,47 @@ function describeEngineError(error) {
   return message;
 }
 
+/** Mark the neural option unavailable rather than letting it fail again. */
+function setKokoroAvailability(available) {
+  const option = dom.engine.querySelector('option[value="kokoro"]');
+  if (!option) return;
+  option.disabled = !available;
+  option.textContent = available
+    ? "Kokoro（ニューラル）"
+    : IS_LOCAL_SERVER
+      ? "Kokoro（未取得）"
+      : "Kokoro（このURLでは使えません）";
+}
+
 async function fallbackToSystem(reason) {
+  setKokoroAvailability(false);
   dom.setupNotice.hidden = false;
+  dom.setupNotice.classList.toggle("is-info", !IS_LOCAL_SERVER);
+
+  if (IS_LOCAL_SERVER) {
+    dom.setupTitle.textContent = "音声モデルがまだありません。";
+    dom.setupBody.textContent =
+      "ターミナルで ./tools/setup.sh を実行するとニューラル音声(Kokoro)が使えます。それまでは端末内蔵の音声で練習できます。";
+  } else {
+    dom.setupTitle.textContent = "端末内蔵の音声で動作しています。";
+    dom.setupBody.textContent =
+      "この公開版はダウンロードなしで使えます。より自然なニューラル音声(Kokoro)で練習したい場合は、パソコンにリポジトリを取り込んでローカルで実行してください。";
+  }
+
   // startEngine() overwrites the status line, so the reason lives in the
   // notice. An empty reason means the notice's own text already says it.
   dom.setupReason.textContent = reason;
+  // A real failure always shows; the "this is the hosted build" note does not
+  // need to reappear on every visit.
+  const dismissible = !reason;
+  dom.noticeClose.hidden = !dismissible;
+  if (dismissible && state.noticeDismissed) dom.setupNotice.hidden = true;
   dom.engine.value = "system";
   setStatus(
     reason
-      ? `${reason} — システム音声に切り替えます`
-      : "音声モデルが未取得のため、システム音声で動作します",
-    "error",
+      ? `${reason} — 端末内蔵の音声に切り替えます`
+      : "端末内蔵の音声で動作します",
+    reason ? "error" : "",
   );
   // state.engineId is left alone so the next launch retries Kokoro.
   await startEngine("system");
@@ -528,6 +613,7 @@ async function startEngine(id) {
     dom.setupNotice.hidden = true;
     dom.setupReason.textContent = "";
     dom.nativeSpeedRow.hidden = false;
+    setKokoroAvailability(true);
 
     const base = new URL(".", window.location.href).href;
     engine = new KokoroEngine({
@@ -557,7 +643,7 @@ async function startEngine(id) {
     dom.engineInfo.textContent =
       engine.id === "kokoro"
         ? `Kokoro-82M / ${engine.options.dtype} / ${engine.device}`
-        : "システム音声";
+        : "端末内蔵の音声";
     setStatus("準備完了");
   } catch (error) {
     engineReady = false;
@@ -657,6 +743,12 @@ function bindControls() {
     if (dom.source.value.trim()) doSplit();
   });
 
+  dom.noticeClose.addEventListener("click", () => {
+    dom.setupNotice.hidden = true;
+    state.noticeDismissed = true;
+    saveSettings();
+  });
+
   dom.source.addEventListener("change", () => {
     state.text = dom.source.value;
     saveSettings();
@@ -723,6 +815,8 @@ function applySettingsToDom() {
   dom.abbrBuiltin.textContent = [...ABBR_NEVER, ...ABBR_SOFT, ...ABBR_ACRONYM]
     .map((a) => `${a}.`)
     .join("  ");
+  // On a phone the settings would push the transport buttons off screen.
+  dom.settingsPanel.open = !isSmallScreen();
   applyPauseModeVisibility();
 }
 

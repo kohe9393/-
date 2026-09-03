@@ -265,45 +265,81 @@ export class KokoroEngine {
   }
 }
 
+/**
+ * iOS Safari accepts speechSynthesis.pause() and then keeps talking, so on
+ * those platforms a pause is a cancel and a resume re-speaks the sentence
+ * from the top. Sentences here are a few seconds long, so replaying one is a
+ * far smaller cost than a pause button that does nothing.
+ */
+const PAUSE_IS_UNRELIABLE = (() => {
+  if (typeof navigator === "undefined") return false;
+  const ua = navigator.userAgent || "";
+  const platform = navigator.platform || "";
+  const iPadOS = /Mac/.test(platform) && navigator.maxTouchPoints > 1;
+  return /iPhone|iPad|iPod/.test(ua) || /iP(hone|ad|od)/.test(platform) || iPadOS;
+})();
+
 /** Playback backed by the browser's speech synthesis. */
 class UtterancePlayback {
   constructor(text, { voice, rate, onended, onerror }) {
     this.duration = null; // not knowable up front
+    this._text = text;
+    this._voice = voice;
+    this._rate = rate;
+    this._onended = onended;
+    this._onerror = onerror;
     this._stopped = false;
-    const utterance = new SpeechSynthesisUtterance(text);
-    if (voice) utterance.voice = voice;
-    utterance.rate = rate;
-    utterance.lang = voice ? voice.lang : "en-US";
-    utterance.addEventListener("end", () => {
-      this._clearKeepAlive();
-      if (!this._stopped && onended) onended();
-    });
-    utterance.addEventListener("error", (event) => {
-      this._clearKeepAlive();
-      // "interrupted"/"canceled" are our own stop() calls.
-      if (this._stopped || event.error === "interrupted" || event.error === "canceled") {
-        return;
-      }
-      if (onerror) onerror(new Error(event.error || "speech failed"));
-    });
-    this._utterance = utterance;
+    this._paused = false;
+    this._keepAlive = null;
   }
 
   play() {
+    this._speak();
+  }
+
+  _speak() {
+    const utterance = new SpeechSynthesisUtterance(this._text);
+    if (this._voice) utterance.voice = this._voice;
+    utterance.rate = this._rate;
+    utterance.lang = this._voice ? this._voice.lang : "en-US";
+
+    utterance.addEventListener("end", () => {
+      this._clearKeepAlive();
+      // cancel() fires "end" too, so a pause or a stop must not look like
+      // the sentence finishing — that would auto-advance to the next one.
+      if (this._stopped || this._paused) return;
+      if (this._onended) this._onended();
+    });
+    utterance.addEventListener("error", (event) => {
+      this._clearKeepAlive();
+      if (this._stopped || this._paused) return;
+      if (event.error === "interrupted" || event.error === "canceled") return;
+      if (this._onerror) this._onerror(new Error(event.error || "speech failed"));
+    });
+
+    this._utterance = utterance;
     speechSynthesis.cancel();
-    speechSynthesis.speak(this._utterance);
-    // Chrome on macOS silently drops long utterances; nudging keeps it alive.
-    this._keepAlive = setInterval(() => {
-      if (speechSynthesis.speaking && !speechSynthesis.paused) speechSynthesis.resume();
-    }, 8000);
+    speechSynthesis.speak(utterance);
+    this._startKeepAlive();
   }
 
   pause() {
-    speechSynthesis.pause();
+    if (this._paused || this._stopped) return;
+    this._paused = true;
+    this._clearKeepAlive();
+    if (PAUSE_IS_UNRELIABLE) speechSynthesis.cancel();
+    else speechSynthesis.pause();
   }
 
   resume() {
-    speechSynthesis.resume();
+    if (!this._paused || this._stopped) return;
+    this._paused = false;
+    if (PAUSE_IS_UNRELIABLE) {
+      this._speak();
+    } else {
+      speechSynthesis.resume();
+      this._startKeepAlive();
+    }
   }
 
   setRate() {
@@ -314,6 +350,14 @@ class UtterancePlayback {
     this._stopped = true;
     this._clearKeepAlive();
     speechSynthesis.cancel();
+  }
+
+  _startKeepAlive() {
+    this._clearKeepAlive();
+    // Chrome on macOS silently drops long utterances; nudging keeps it alive.
+    this._keepAlive = setInterval(() => {
+      if (speechSynthesis.speaking && !speechSynthesis.paused) speechSynthesis.resume();
+    }, 8000);
   }
 
   _clearKeepAlive() {
@@ -385,6 +429,26 @@ export class SystemEngine {
         };
       })
       .sort((a, b) => b.score - a.score || a.label.localeCompare(b.label));
+  }
+
+  /** True when pausing restarts the sentence instead of freezing it. */
+  get pauseRestarts() {
+    return PAUSE_IS_UNRELIABLE;
+  }
+
+  /**
+   * Mobile Safari only allows speech that a user gesture started, so the
+   * first tap spends a silent utterance to unlock the queue.
+   */
+  unlock() {
+    if (this._unlocked || typeof speechSynthesis === "undefined") return;
+    this._unlocked = true;
+    try {
+      speechSynthesis.speak(new SpeechSynthesisUtterance(" "));
+      speechSynthesis.cancel();
+    } catch {
+      // Nothing to do; the first real play will surface any problem.
+    }
   }
 
   /** Nothing to pre-render; the text itself is the clip. */
