@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>英語シャドーイング練習ツール</title>
+    <link rel="stylesheet" href="src/style.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <h1>英語シャドーイング練習</h1>
+      <div class="topbar-meta">
+        <span id="engineInfo" class="pill">起動中…</span>
+        <span id="counter" class="pill">0 / 0</span>
+      </div>
+    </header>
+
+    <div id="setupNotice" class="notice" hidden>
+      <strong>音声モデルがまだありません。</strong>
+      ターミナルで <code>./tools/setup.sh</code> を実行してモデルを取得してください。
+      取得が終わるまではシステム音声で練習できます。
+      <span id="setupReason" class="notice-reason"></span>
+    </div>
+
+    <main class="layout">
+      <section class="panel" aria-label="英文の入力">
+        <h2>1. 英文を貼り付ける</h2>
+        <textarea
+          id="srcText"
+          rows="8"
+          spellcheck="false"
+          placeholder="ここに英文を貼り付けてください。"
+        ></textarea>
+        <div class="row">
+          <button id="btnSplit" class="primary" type="button">文に分割</button>
+          <button id="btnSample" type="button">サンプル</button>
+          <button id="btnClear" type="button">クリア</button>
+          <label class="check">
+            <input id="chkNewline" type="checkbox" />
+            改行ごとに区切る
+          </label>
+        </div>
+
+        <details class="advanced">
+          <summary>文分割の詳細設定</summary>
+          <p class="hint">
+            ピリオドだけで区切ると <code>Mr.</code> / <code>U.S.</code> /
+            <code>e.g.</code> などで誤分割するため、下の略語は文末として扱いません。
+            ここに単語を追加すると（空白か改行区切り）、その語の直後では区切らなくなります。
+          </p>
+          <textarea
+            id="abbrText"
+            rows="3"
+            spellcheck="false"
+            placeholder="例: Approx  Ref  Sched"
+          ></textarea>
+          <p class="hint">組み込み済みの略語:</p>
+          <p id="abbrBuiltin" class="builtin"></p>
+        </details>
+      </section>
+
+      <section class="panel practice" aria-label="練習">
+        <h2>2. 音読する</h2>
+        <ol id="sentenceList" class="sentences"></ol>
+        <p id="emptyState" class="empty">
+          英文を貼り付けて「文に分割」を押すと、ここに1文ずつ表示されます。
+        </p>
+      </section>
+    </main>
+
+    <footer class="controls">
+      <div class="controls-row transport">
+        <button id="btnPrev" type="button" title="前の文 (←)">◀︎ 前</button>
+        <button id="btnPlay" class="primary" type="button" title="再生 / 一時停止 (Space)">
+          ▶︎ 再生
+        </button>
+        <button id="btnRepeat" type="button" title="今の文をリピート (R)">⟲ リピート</button>
+        <button id="btnNext" type="button" title="次の文 (→)">次 ▶︎</button>
+        <button id="btnStop" type="button" title="停止 (Esc)">■ 停止</button>
+        <span id="statusText" class="status">準備中…</span>
+      </div>
+
+      <div id="progressWrap" class="progress" hidden>
+        <span id="progressLabel" class="progress-label">ポーズ</span>
+        <span class="progress-track"><span id="progressBar" class="progress-bar"></span></span>
+      </div>
+
+      <div class="controls-row settings">
+        <label class="field">
+          <span>再生速度</span>
+          <input id="rngSpeed" type="range" min="0.6" max="1.2" step="0.1" value="1" />
+          <output id="outSpeed">1.0x</output>
+        </label>
+
+        <label class="field">
+          <span>ポーズ</span>
+          <select id="selPauseMode">
+            <option value="fixed">固定秒数</option>
+            <option value="ratio">音声の長さ×倍率</option>
+          </select>
+        </label>
+
+        <label id="pauseFixedRow" class="field">
+          <span>長さ</span>
+          <input id="rngPause" type="range" min="0" max="5" step="0.5" value="2" />
+          <output id="outPause">2.0秒</output>
+        </label>
+
+        <label id="pauseRatioRow" class="field" hidden>
+          <span>倍率</span>
+          <input id="rngRatio" type="range" min="0.5" max="2" step="0.1" value="1" />
+          <output id="outRatio">1.0倍</output>
+        </label>
+
+        <label class="field">
+          <span>モード</span>
+          <select id="selMode">
+            <option value="continuous">連続再生</option>
+            <option value="manual">1文ずつ手動</option>
+          </select>
+        </label>
+
+        <label class="field">
+          <span>エンジン</span>
+          <select id="selEngine">
+            <option value="kokoro">Kokoro（ニューラル）</option>
+            <option value="system">システム音声</option>
+          </select>
+        </label>
+
+        <label class="field wide">
+          <span>音声</span>
+          <select id="selVoice"></select>
+        </label>
+
+        <label id="nativeSpeedRow" class="check" hidden>
+          <input id="chkNativeSpeed" type="checkbox" />
+          速度をモデル側で再合成（高品質・生成やり直し）
+        </label>
+      </div>
+
+      <p class="shortcuts">
+        <kbd>Space</kbd> 一時停止/再開 ・ <kbd>R</kbd> リピート ・
+        <kbd>←</kbd> <kbd>→</kbd> 前後の文 ・ <kbd>Esc</kbd> 停止
+      </p>
+    </footer>
+
+    <script type="module" src="src/app.js"></script>
+  </body>
+</html>
