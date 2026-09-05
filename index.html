@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0f1114">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="日本史">
+<link rel="icon" href="data:,">
+<title>日本史一問一答</title>
+<style>
+:root{
+  --bg:#0f1114; --card:#171a1f; --card2:#1e222a; --line:#2a2f38;
+  --fg:#dfe3e8; --fg2:#9aa4b0; --fg3:#6f7a87;
+  --accent:#5b8dd6; --ok:#3f7d5f; --near:#8a7231; --ng:#94464a;
+  --pad:16px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0;height:100%}
+body{
+  background:var(--bg); color:var(--fg);
+  font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP",sans-serif;
+  font-size:16px; line-height:1.7; overscroll-behavior:none;
+}
+button{font-family:inherit;color:inherit;border:none;background:none;font-size:16px}
+.screen{display:none;min-height:100dvh;flex-direction:column}
+.screen.on{display:flex}
+.top{flex:1;overflow-y:auto;padding:calc(env(safe-area-inset-top) + 14px) var(--pad) 8px;-webkit-overflow-scrolling:touch}
+.bottom{padding:10px var(--pad) calc(env(safe-area-inset-bottom) + 14px);border-top:1px solid var(--line);background:var(--card)}
+h1{font-size:17px;margin:0 0 14px;color:var(--fg2);font-weight:600;letter-spacing:.04em}
+.big{display:block;width:100%;padding:17px 16px;margin-bottom:10px;border-radius:12px;
+  background:var(--card2);border:1px solid var(--line);font-size:17px;font-weight:600;text-align:left}
+.big:active{background:#262b34}
+.big .sub{display:block;font-size:12px;font-weight:400;color:var(--fg3);margin-top:3px}
+.row{display:flex;gap:8px}
+.row>button{flex:1}
+.j{padding:18px 6px;border-radius:12px;font-size:16px;font-weight:700;text-align:center;border:1px solid var(--line)}
+.j.ok{background:var(--ok)} .j.near{background:var(--near)} .j.ng{background:var(--ng)}
+.j:active{filter:brightness(1.25)}
+.flat{display:block;width:100%;padding:13px;border-radius:10px;background:var(--card2);border:1px solid var(--line);text-align:center;font-size:15px}
+.flat:active{background:#2a303a}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:12px}
+.stat .n{font-size:26px;font-weight:700;letter-spacing:.02em}
+.stat .l{font-size:12px;color:var(--fg3)}
+.add{color:#7fb98a;font-size:13px;margin-left:8px;font-weight:600}
+.meta{font-size:11.5px;color:var(--fg3);margin-bottom:12px;letter-spacing:.02em}
+.q{font-size:20px;line-height:1.75;font-weight:500;margin:6px 0 18px}
+.ans{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:12px}
+.ans .a{font-size:22px;font-weight:700;color:#9fd0a8;line-height:1.5}
+.chips{margin-top:9px;display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-size:12.5px;color:var(--fg2);background:var(--card2);border:1px solid var(--line);border-radius:99px;padding:3px 10px}
+.note{margin-top:11px;padding-top:11px;border-top:1px solid var(--line);font-size:14px;color:var(--fg2);line-height:1.75}
+.bar{height:3px;background:var(--card2);border-radius:2px;overflow:hidden;margin-bottom:12px}
+.bar>i{display:block;height:100%;background:var(--accent)}
+.hint{font-size:12.5px;color:var(--fg3);text-align:center;padding:6px 0}
+.list{margin:0;padding:0;list-style:none}
+.list li{padding:11px 0;border-bottom:1px solid var(--line);font-size:14px;line-height:1.65}
+.list li .a2{color:#9fd0a8;font-weight:600}
+select,textarea{width:100%;background:var(--card2);color:var(--fg);border:1px solid var(--line);
+  border-radius:10px;padding:12px;font-size:15px;font-family:inherit;margin-bottom:10px}
+textarea{height:130px;font-size:12px;line-height:1.5}
+label{font-size:12.5px;color:var(--fg3);display:block;margin-bottom:5px}
+.ver{position:fixed;right:8px;top:calc(env(safe-area-inset-top) + 4px);font-size:9.5px;color:#4b535e;z-index:99;pointer-events:none}
+.tag{display:flex;justify-content:space-between;align-items:center;width:100%;
+  padding:14px;margin-bottom:8px;border-radius:11px;background:var(--card2);border:1px solid var(--line)}
+.tag .r{font-size:14px;color:var(--fg2);font-variant-numeric:tabular-nums}
+.msg{font-size:13.5px;color:var(--fg2);padding:10px 0;line-height:1.7}
+.center{text-align:center}
+.pct{font-size:40px;font-weight:700;text-align:center;margin:8px 0 2px}
+</style>
+</head>
+<body>
+
+<div id="s-home" class="screen on">
+  <div class="top">
+    <h1>日本史 一問一答</h1>
+    <div class="stat">
+      <div class="n" id="h-due">–</div><div class="l">今日の復習</div>
+    </div>
+    <div class="stat">
+      <div class="n"><span id="h-total">–</span><span class="add" id="h-add"></span></div>
+      <div class="l">総問題数 ／ 未出題 <span id="h-new">–</span>問</div>
+    </div>
+    <div class="msg" id="h-msg"></div>
+  </div>
+  <div class="bottom">
+    <button class="big" onclick="startNormal()">通常<span class="sub">未出題＋復習期限が来たもの</span></button>
+    <button class="big" onclick="startWrong()">間違えた問題のみ<span class="sub">直近の誤答＋連続正解2回未満</span></button>
+    <button class="big" onclick="show('range')">範囲指定<span class="sub">時代・単元・プリントで絞る</span></button>
+    <button class="big" onclick="showTags()">弱点タグ<span class="sub">正答率の低いタグから集中出題</span></button>
+    <button class="flat" onclick="showData()">データ（エクスポート／インポート）</button>
+  </div>
+</div>
+
+<div id="s-quiz" class="screen">
+  <div class="top">
+    <div class="bar"><i id="q-bar"></i></div>
+    <div class="meta" id="q-meta"></div>
+    <div class="q" id="q-text"></div>
+    <div id="q-ans" hidden>
+      <div class="ans">
+        <div class="a" id="q-a"></div>
+        <div class="chips" id="q-alt"></div>
+        <div class="note" id="q-note"></div>
+      </div>
+    </div>
+  </div>
+  <div class="bottom">
+    <div id="q-reveal">
+      <button class="big center" style="text-align:center" onclick="reveal()">答えを見る</button>
+    </div>
+    <div id="q-judge" hidden>
+      <div class="row">
+        <button class="j ok" onclick="judge('correct')">正解</button>
+        <button class="j near" onclick="judge('close')">惜しい</button>
+        <button class="j ng" onclick="judge('wrong')">不正解</button>
+      </div>
+      <div class="hint">自己採点：かな・略称・別表記も正解でよい</div>
+    </div>
+  </div>
+</div>
+
+<div id="s-interim" class="screen">
+  <div class="top">
+    <h1>ここまでの成績</h1>
+    <div class="pct" id="i-pct"></div>
+    <div class="l center" style="color:var(--fg3);font-size:12px">正答率</div>
+    <div class="msg" id="i-tags"></div>
+  </div>
+  <div class="bottom">
+    <button class="big center" style="text-align:center" onclick="resume()">続ける</button>
+    <button class="flat" onclick="finish()">ここで終了</button>
+  </div>
+</div>
+
+<div id="s-result" class="screen">
+  <div class="top">
+    <h1>結果</h1>
+    <div class="pct" id="r-pct"></div>
+    <div class="center" style="color:var(--fg3);font-size:12px" id="r-count"></div>
+    <div class="msg" id="r-tags"></div>
+    <div id="r-wrong"></div>
+  </div>
+  <div class="bottom">
+    <button class="big center" style="text-align:center" onclick="again()">もう20問</button>
+    <div class="row">
+      <button class="flat" onclick="showData()">データ</button>
+      <button class="flat" onclick="home()">ホーム</button>
+    </div>
+  </div>
+</div>
+
+<div id="s-range" class="screen">
+  <div class="top">
+    <h1>範囲指定</h1>
+    <label>時代</label><select id="f-era" onchange="fillUnits()"></select>
+    <label>プリント（出典）</label><select id="f-src" onchange="fillUnits()"></select>
+    <label>単元</label><select id="f-unit"></select>
+    <div class="msg" id="f-msg"></div>
+  </div>
+  <div class="bottom">
+    <button class="big center" style="text-align:center" onclick="startRange()">この範囲で出題</button>
+    <button class="flat" onclick="home()">戻る</button>
+  </div>
+</div>
+
+<div id="s-tags" class="screen">
+  <div class="top">
+    <h1>弱点タグ</h1>
+    <div class="msg" id="t-msg"></div>
+    <div id="t-list"></div>
+  </div>
+  <div class="bottom">
+    <button class="flat" onclick="home()">戻る</button>
+  </div>
+</div>
+
+<div id="s-data" class="screen">
+  <div class="top">
+    <h1>データ</h1>
+    <div class="msg" id="d-stat"></div>
+    <label>エクスポート（コピーしてチャットに貼る）</label>
+    <textarea id="d-out" readonly></textarea>
+    <button class="flat" style="margin-bottom:18px" onclick="copyOut()">コピー</button>
+    <label>インポート（貼り付けて取込）</label>
+    <textarea id="d-in" placeholder="ここに貼り付け"></textarea>
+    <button class="flat" style="margin-bottom:10px" onclick="importText()">貼り付けた内容を取り込む</button>
+    <button class="flat" onclick="importRepo()">リポジトリのバックアップから復元</button>
+    <div class="msg" id="d-msg"></div>
+  </div>
+  <div class="bottom">
+    <button class="flat" onclick="home()">ホーム</button>
+  </div>
+</div>
+
+<div class="ver" id="ver"></div>
+
+<script>
+'use strict';
+var APP_VER = 1;
+var LS_H = 'rekishi_history', LS_S = 'rekishi_stats', LS_M = 'rekishi_meta';
+var LADDER = [1, 3, 7];
+var SESSION = 20;
+
+var Q = [], BYID = {}, DATA_VER = 0;
+var stats = {}, hist = [], meta = {};
+var ses = null;
+
+/* ---------- 日付（JST・日単位） ---------- */
+function jstDate(){ return new Date(Date.now() + 9 * 3600000); }
+function today(){ return jstDate().toISOString().slice(0, 10); }
+function nowISO(){ return jstDate().toISOString().replace(/\.\d{3}Z$/, '+09:00'); }
+function addDays(d, n){
+  var t = new Date(d + 'T00:00:00Z');
+  t.setUTCDate(t.getUTCDate() + n);
+  return t.toISOString().slice(0, 10);
+}
+
+/* ---------- 保存 ---------- */
+function load(k, dflt){
+  try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : dflt; }
+  catch (e) { return dflt; }
+}
+function save(){
+  try {
+    localStorage.setItem(LS_S, JSON.stringify(stats));
+    localStorage.setItem(LS_H, JSON.stringify(hist));
+    localStorage.setItem(LS_M, JSON.stringify(meta));
+  } catch (e) {
+    alert('保存に失敗しました。ストレージの空きを確認してください。');
+  }
+}
+function newStat(){
+  return { seen:0, correct:0, close:0, wrong:0, streak:0, stage:0, graduated:false,
+           lastAnswered:null, nextDue:null, wrongCount:0, critical:false };
+}
+
+/* ---------- 復習アルゴリズム ---------- */
+function applyResult(st, result){
+  var d = today();
+  st.seen++;
+  if (result === 'correct') {
+    st.correct++; st.streak++;
+    if (st.streak >= 2) { st.graduated = true; st.nextDue = addDays(d, 30); }
+    else { st.stage = Math.min(st.stage + 1, 2); st.nextDue = addDays(d, LADDER[st.stage]); }
+  } else if (result === 'close') {
+    st.close++; st.streak = 0; st.graduated = false;
+    st.nextDue = addDays(d, Math.ceil(LADDER[st.stage] / 2));
+  } else {
+    st.wrong++; st.wrongCount++; st.streak = 0; st.stage = 0; st.graduated = false;
+    st.nextDue = addDays(d, 1);
+  }
+  if (st.wrongCount >= 3) st.critical = true;
+  st.lastAnswered = nowISO();
+}
+
+/* ---------- 画面 ---------- */
+function show(name){
+  var all = document.querySelectorAll('.screen');
+  for (var i = 0; i < all.length; i++) all[i].classList.remove('on');
+  document.getElementById('s-' + name).classList.add('on');
+  window.scrollTo(0, 0);
+  var t = document.querySelector('.screen.on .top');
+  if (t) t.scrollTop = 0;
+}
+function home(){ renderHome(); show('home'); }
+
+/* ---------- 起動 ---------- */
+function boot(){
+  stats = load(LS_S, {});
+  hist = load(LS_H, []);
+  meta = load(LS_M, {});
+  fetch('data/questions.json', { cache: 'no-cache' })
+    .then(function(r){ if (!r.ok) throw 0; return r.json(); })
+    .then(setData)
+    .catch(function(){
+      return caches.match('data/questions.json')
+        .then(function(r){ return r ? r.json() : null; })
+        .then(function(j){
+          if (j) setData(j);
+          else document.getElementById('h-msg').textContent =
+            '問題データを読み込めませんでした。一度オンラインで開いてください。';
+        })
+        .catch(function(){
+          document.getElementById('h-msg').textContent = '問題データを読み込めませんでした。';
+        });
+    });
+}
+function setData(j){
+  Q = j.questions || [];
+  DATA_VER = j.version || 0;
+  BYID = {};
+  for (var i = 0; i < Q.length; i++) BYID[Q[i].id] = Q[i];
+  document.getElementById('ver').textContent = 'データ v' + DATA_VER + ' / アプリ v' + APP_VER;
+  fillFilters();
+  renderHome();
+}
+
+/* ---------- ホーム ---------- */
+function dueList(){
+  var d = today(), out = [];
+  for (var i = 0; i < Q.length; i++) {
+    var s = stats[Q[i].id];
+    if (s && s.nextDue && s.nextDue <= d) out.push(Q[i]);
+  }
+  return out;
+}
+function newList(){
+  var out = [];
+  for (var i = 0; i < Q.length; i++) if (!stats[Q[i].id]) out.push(Q[i]);
+  return out;
+}
+function renderHome(){
+  var due = dueList().length, fresh = newList().length;
+  document.getElementById('h-due').textContent = due + '問';
+  document.getElementById('h-total').textContent = Q.length + '問';
+  document.getElementById('h-new').textContent = fresh;
+  var add = '';
+  if (meta.lastTotal && Q.length > meta.lastTotal) add = '+' + (Q.length - meta.lastTotal) + '問追加';
+  document.getElementById('h-add').textContent = add;
+  var crit = 0, grad = 0;
+  for (var k in stats) { if (stats[k].critical) crit++; if (stats[k].graduated) grad++; }
+  document.getElementById('h-msg').textContent =
+    Q.length ? ('卒業 ' + grad + '問 ／ 最重要リスト ' + crit + '問 ／ 解答総数 ' + hist.length + '回') : '';
+  if (Q.length) { meta.lastTotal = Q.length; save(); }
+}
+
+/* ---------- 出題プール ---------- */
+function shuffle(a){
+  for (var i = a.length - 1; i > 0; i--) {
+    var j = Math.floor(Math.random() * (i + 1)), t = a[i]; a[i] = a[j]; a[j] = t;
+  }
+  return a;
+}
+function startNormal(){
+  var d = today(), crit = [], due = [], fresh = [];
+  for (var i = 0; i < Q.length; i++) {
+    var q = Q[i], s = stats[q.id];
+    if (!s) { fresh.push(q); continue; }
+    if (s.critical && (!s.nextDue || s.nextDue <= d || Math.random() < 0.25)) { crit.push(q); continue; }
+    if (s.nextDue && s.nextDue <= d) due.push(q);
+  }
+  due.sort(function(a, b){ return (stats[a.id].nextDue < stats[b.id].nextDue) ? -1 : 1; });
+  var pool = shuffle(crit).concat(due, shuffle(fresh));
+  begin(pool, 'normal', '通常');
+}
+function startWrong(){
+  var pool = [];
+  for (var i = 0; i < Q.length; i++) {
+    var s = stats[Q[i].id];
+    if (s && s.streak < 2 && (s.wrong > 0 || s.close > 0)) pool.push(Q[i]);
+  }
+  pool.sort(function(a, b){ return stats[b.id].wrongCount - stats[a.id].wrongCount; });
+  begin(pool, 'wrong-only', '間違えた問題のみ');
+}
+function startRange(){
+  var e = document.getElementById('f-era').value,
+      s = document.getElementById('f-src').value,
+      u = document.getElementById('f-unit').value;
+  var pool = Q.filter(function(q){
+    return (!e || q.時代 === e) && (!s || q.出典.indexOf(s) >= 0) && (!u || q.単元 === u);
+  });
+  begin(prioritize(pool), 'range', '範囲指定');
+}
+function startTag(tag){
+  var pool = Q.filter(function(q){ return q.タグ.indexOf(tag) >= 0; });
+  begin(prioritize(pool), 'weak-tag', '弱点タグ：' + tag);
+}
+function prioritize(pool){
+  var d = today();
+  return pool.slice().sort(function(a, b){
+    var sa = stats[a.id], sb = stats[b.id];
+    var ra = sa ? (sa.critical ? 0 : (sa.graduated ? 3 : (sa.nextDue && sa.nextDue <= d ? 1 : 2))) : 1.5;
+    var rb = sb ? (sb.critical ? 0 : (sb.graduated ? 3 : (sb.nextDue && sb.nextDue <= d ? 1 : 2))) : 1.5;
+    if (ra !== rb) return ra - rb;
+    return Math.random() - 0.5;
+  });
+}
+
+/* ---------- セッション ---------- */
+function begin(pool, mode, label){
+  if (!pool.length) { alert('この条件に該当する問題がありません。'); return; }
+  ses = { list: pool.slice(0, SESSION), i: 0, mode: mode, label: label,
+          c: 0, n: 0, w: 0, wrongIds: [], tagNG: {}, tagAll: {} };
+  ses.lastPool = pool;
+  render();
+}
+function again(){
+  if (!ses) { home(); return; }
+  var done = {};
+  for (var i = 0; i < ses.list.length; i++) done[ses.list[i].id] = 1;
+  var rest = (ses.lastPool || []).filter(function(q){ return !done[q.id]; });
+  if (!rest.length) { alert('この条件の問題は解き終わりました。'); home(); return; }
+  var keep = ses.lastPool;
+  begin(rest, ses.mode, ses.label);
+  ses.lastPool = rest;
+}
+function render(){
+  var q = ses.list[ses.i];
+  document.getElementById('q-bar').style.width = (ses.i / ses.list.length * 100) + '%';
+  document.getElementById('q-meta').textContent =
+    (ses.i + 1) + ' / ' + ses.list.length + '　·　' + q.時代 + '　·　' + q.単元 + '　·　難' + q.難易度;
+  document.getElementById('q-text').textContent = q.問題文;
+  document.getElementById('q-ans').hidden = true;
+  document.getElementById('q-reveal').hidden = false;
+  document.getElementById('q-judge').hidden = true;
+  show('quiz');
+}
+function reveal(){
+  var q = ses.list[ses.i];
+  document.getElementById('q-a').textContent = q.正答;
+  var alt = document.getElementById('q-alt');
+  alt.innerHTML = '';
+  (q.別表記 || []).forEach(function(a){
+    var s = document.createElement('span'); s.className = 'chip'; s.textContent = a; alt.appendChild(s);
+  });
+  document.getElementById('q-note').textContent = q.補足 || '';
+  document.getElementById('q-ans').hidden = false;
+  document.getElementById('q-reveal').hidden = true;
+  document.getElementById('q-judge').hidden = false;
+}
+function judge(result){
+  var q = ses.list[ses.i];
+  if (!stats[q.id]) stats[q.id] = newStat();
+  applyResult(stats[q.id], result);
+  hist.push({ id: q.id, ts: nowISO(), result: result, mode: ses.mode, src: 'app' });
+  if (result === 'correct') ses.c++; else if (result === 'close') ses.n++; else ses.w++;
+  if (result !== 'correct') ses.wrongIds.push(q.id);
+  q.タグ.forEach(function(t){
+    ses.tagAll[t] = (ses.tagAll[t] || 0) + 1;
+    if (result !== 'correct') ses.tagNG[t] = (ses.tagNG[t] || 0) + 1;
+  });
+  save();
+  ses.i++;
+  if (ses.i >= ses.list.length) { finish(); return; }
+  if (ses.i % 10 === 0) { interim(); return; }
+  render();
+}
+function sesPct(){
+  var n = ses.c + ses.n + ses.w;
+  return n ? Math.round(ses.c / n * 100) : 0;
+}
+function weakOfSession(){
+  var arr = [];
+  for (var t in ses.tagNG) arr.push([t, ses.tagNG[t]]);
+  arr.sort(function(a, b){ return b[1] - a[1]; });
+  return arr.slice(0, 3).map(function(x){ return x[0] + '（' + x[1] + '問）'; }).join('　');
+}
+function interim(){
+  document.getElementById('i-pct').textContent = sesPct() + '%';
+  var w = weakOfSession();
+  document.getElementById('i-tags').textContent = w ? ('つまずいたタグ：' + w) : 'ここまで全問正解。';
+  show('interim');
+}
+function resume(){ render(); }
+function finish(){
+  document.getElementById('r-pct').textContent = sesPct() + '%';
+  document.getElementById('r-count').textContent =
+    ses.label + '　正解' + ses.c + '／惜しい' + ses.n + '／不正解' + ses.w;
+  var w = weakOfSession();
+  document.getElementById('r-tags').textContent = w ? ('弱点タグ：' + w) : '弱点タグなし。';
+  var box = document.getElementById('r-wrong');
+  box.innerHTML = '';
+  if (ses.wrongIds.length) {
+    var h = document.createElement('h1'); h.textContent = '間違えた問題'; box.appendChild(h);
+    var ul = document.createElement('ul'); ul.className = 'list';
+    ses.wrongIds.forEach(function(id){
+      var q = BYID[id], li = document.createElement('li');
+      li.innerHTML = '';
+      li.appendChild(document.createTextNode(q.問題文));
+      li.appendChild(document.createElement('br'));
+      var sp = document.createElement('span'); sp.className = 'a2'; sp.textContent = '→ ' + q.正答;
+      li.appendChild(sp);
+      ul.appendChild(li);
+    });
+    box.appendChild(ul);
+  }
+  show('result');
+}
+
+/* ---------- 範囲指定 ---------- */
+function fillFilters(){
+  var eras = [], srcs = [];
+  Q.forEach(function(q){
+    if (eras.indexOf(q.時代) < 0) eras.push(q.時代);
+    if (srcs.indexOf(q.出典) < 0) srcs.push(q.出典);
+  });
+  srcs = srcs.slice().sort();
+  opt('f-era', eras, 'すべての時代');
+  opt('f-src', srcs, 'すべてのプリント');
+  fillUnits();
+}
+function opt(id, arr, first){
+  var s = document.getElementById(id);
+  s.innerHTML = '';
+  var o = document.createElement('option'); o.value = ''; o.textContent = first; s.appendChild(o);
+  arr.forEach(function(v){
+    var e = document.createElement('option'); e.value = v; e.textContent = v; s.appendChild(e);
+  });
+}
+function fillUnits(){
+  var e = document.getElementById('f-era').value, sv = document.getElementById('f-src').value;
+  var us = [], n = 0;
+  Q.forEach(function(q){
+    if ((!e || q.時代 === e) && (!sv || q.出典.indexOf(sv) >= 0)) {
+      n++;
+      if (us.indexOf(q.単元) < 0) us.push(q.単元);
+    }
+  });
+  opt('f-unit', us, 'すべての単元');
+  document.getElementById('f-msg').textContent = '該当 ' + n + '問（最大' + SESSION + '問ずつ出題）';
+}
+
+/* ---------- 弱点タグ ---------- */
+function showTags(){
+  var agg = {};
+  Q.forEach(function(q){
+    var s = stats[q.id];
+    if (!s || !s.seen) return;
+    q.タグ.forEach(function(t){
+      if (!agg[t]) agg[t] = { c: 0, n: 0 };
+      agg[t].c += s.correct; agg[t].n += s.correct + s.close + s.wrong;
+    });
+  });
+  var arr = [];
+  for (var t in agg) if (agg[t].n >= 5) arr.push([t, agg[t].c / agg[t].n, agg[t].n]);
+  arr.sort(function(a, b){ return a[1] - b[1]; });
+  var box = document.getElementById('t-list');
+  box.innerHTML = '';
+  document.getElementById('t-msg').textContent = arr.length
+    ? '正答率の低い順。タップするとそのタグから出題します。'
+    : 'まだ集計できません。5回以上解答したタグから表示されます。まず通常モードで進めてください。';
+  arr.slice(0, 20).forEach(function(x){
+    var b = document.createElement('button');
+    b.className = 'tag';
+    var l = document.createElement('span'); l.textContent = x[0];
+    var r = document.createElement('span'); r.className = 'r';
+    r.textContent = Math.round(x[1] * 100) + '%（' + x[2] + '回）';
+    b.appendChild(l); b.appendChild(r);
+    b.onclick = function(){ startTag(x[0]); };
+    box.appendChild(b);
+  });
+  show('tags');
+}
+
+/* ---------- データ ---------- */
+function showData(){
+  var grad = 0, crit = 0;
+  for (var k in stats) { if (stats[k].graduated) grad++; if (stats[k].critical) crit++; }
+  document.getElementById('d-stat').textContent =
+    '解答総数 ' + hist.length + '回 ／ 着手済み ' + Object.keys(stats).length + '問 ／ 卒業 ' +
+    grad + '問 ／ 最重要 ' + crit + '問';
+  document.getElementById('d-out').value = JSON.stringify({
+    exportedAt: nowISO(), dataVersion: DATA_VER, history: hist, stats: stats
+  });
+  document.getElementById('d-msg').textContent = '';
+  show('data');
+}
+function copyOut(){
+  var t = document.getElementById('d-out');
+  t.removeAttribute('readonly');
+  t.focus(); t.setSelectionRange(0, t.value.length);
+  var done = false;
+  try { done = document.execCommand('copy'); } catch (e) {}
+  t.setAttribute('readonly', 'readonly');
+  if (!done && navigator.clipboard) {
+    navigator.clipboard.writeText(t.value).then(function(){
+      document.getElementById('d-msg').textContent = 'コピーしました。チャットに貼ってください。';
+    });
+    return;
+  }
+  document.getElementById('d-msg').textContent = done
+    ? 'コピーしました。チャットに貼ってください。'
+    : '自動コピーできませんでした。枠内を長押しして全選択・コピーしてください。';
+}
+function mergeIn(h, s){
+  if (Array.isArray(h)) {
+    var seen = {};
+    hist.forEach(function(r){ seen[r.id + '|' + r.ts] = 1; });
+    h.forEach(function(r){
+      if (r && r.id && r.ts && !seen[r.id + '|' + r.ts]) { hist.push(r); seen[r.id + '|' + r.ts] = 1; }
+    });
+    hist.sort(function(a, b){ return a.ts < b.ts ? -1 : 1; });
+  }
+  if (s && typeof s === 'object') for (var k in s) stats[k] = s[k];
+  save();
+}
+function importText(){
+  var v = document.getElementById('d-in').value.trim();
+  if (!v) { document.getElementById('d-msg').textContent = '貼り付けてから押してください。'; return; }
+  try {
+    var j = JSON.parse(v);
+    mergeIn(j.history, j.stats);
+    document.getElementById('d-in').value = '';
+    document.getElementById('d-msg').textContent =
+      '取り込みました。解答総数 ' + hist.length + '回。';
+    showData();
+  } catch (e) {
+    document.getElementById('d-msg').textContent = '読み取れませんでした。JSON全体を貼り付けてください。';
+  }
+}
+function importRepo(){
+  document.getElementById('d-msg').textContent = '取得中…';
+  Promise.all([
+    fetch('data/history.json', { cache: 'no-cache' }).then(function(r){ return r.json(); }).catch(function(){ return null; }),
+    fetch('data/stats.json', { cache: 'no-cache' }).then(function(r){ return r.json(); }).catch(function(){ return null; })
+  ]).then(function(a){
+    if (!a[0] && !a[1]) { document.getElementById('d-msg').textContent = '取得できませんでした。'; return; }
+    mergeIn(a[0] ? a[0].history : null, a[1] ? a[1].stats : null);
+    document.getElementById('d-msg').textContent =
+      'リポジトリのバックアップを取り込みました。解答総数 ' + hist.length + '回。';
+    showData();
+  });
+}
+
+/* ---------- 起動処理 ---------- */
+boot();
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+  window.addEventListener('load', function(){ navigator.serviceWorker.register('sw.js'); });
+}
+</script>
+</body>
+</html>

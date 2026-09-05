@@ -120,7 +120,23 @@ README.md            公開 URL と使い方メモ
 - `critical` … 通算3回以上間違えた問題（最重要リスト）
 - `nextDue` … 次回出題日（`YYYY-MM-DD`、JST）
 
-### 3.4 更新経路は1本だけ
+### 3.4 アプリ内部のキー
+
+- `rekishi_history` … 履歴（§3.2 の `history[]`）
+- `rekishi_stats` … 成績・復習状態（§3.3 の `stats`）
+- `rekishi_meta` … UI 用の補助情報のみ（前回起動時の総問題数など）。学習データではないので、エクスポート・バックアップの対象外。
+
+### 3.5 エクスポートの形式
+
+アプリの「エクスポート」は、次の1つの JSON を出力する。
+
+```json
+{ "exportedAt": "2026-09-06T02:00:00+09:00", "dataVersion": 31, "history": [ ... ], "stats": { ... } }
+```
+
+Claude はこれを受け取ったら `history` を `data/history.json` の `history[]` に、`stats` を `data/stats.json` の `stats` にマージして、両ファイルの `updated` を当日（JST）に更新してコミットする。
+
+### 3.6 更新経路は1本だけ
 
 ```
 学習中の正データ = localStorage（キー: rekishi_history / rekishi_stats）
@@ -194,13 +210,15 @@ localStorage
 
 - Service Worker で `index.html` と `data/questions.json` をキャッシュ。一度開けば圏外でも解ける。
 - 起動時、ネットがあれば `questions.json` を `cache: 'no-cache'` で取り直して更新を反映。失敗したらキャッシュを使う。
-- 更新が反映されない事故を防ぐため、`version` を画面隅に常時表示する。
+- 更新が反映されない事故を防ぐため、`version` を画面隅に常時表示する（右上に「データ vN / アプリ vN」）。
+- **`index.html` を変更したら `sw.js` の `CACHE` の番号を必ず +1 する。** これを忘れると端末に古い画面が residual で残る。
+- `data/` 配下はネットワーク優先（失敗時キャッシュ）、それ以外はキャッシュ優先＋裏で更新。
 
 ## 11. 進め方
 
 - Phase 1: リポジトリ作成 → CLAUDE.md と data/ の雛形 → プリント写真の送り方を説明
 - Phase 2: プリント1枚 → `questions.json` に追記 → 内容確認
-- Phase 3: `index.html` と `sw.js` 作成 → GitHub Pages 公開 → URL
+- Phase 3: `index.html` と `sw.js` 作成 → GitHub Pages 公開 → URL ✅ 完了
 - Phase 4: 実機で動作確認 → 修正
 
 勝手に先のフェーズへ進まない。公開手順を案内するときは、**1ステップずつ**出してユーザーの完了報告を待つ。
