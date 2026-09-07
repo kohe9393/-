@@ -4,6 +4,7 @@
 JSON に英文と和訳を入れると、A4 の印刷用 HTML を出力します。
 
 サンプルとして **英語T（長文）第1講**（Human Tide / Paul Morland）を 1 本組んであります。
+和訳は配布資料の全訳例を 1 文ずつに割り当てたものです。
 
 - `build/eigo-T-01.html` … 和訳入り（配布・板書用）
 - `build/eigo-T-01-blank.html` … 和訳欄を空罫にした演習用
