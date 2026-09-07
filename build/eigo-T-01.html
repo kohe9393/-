@@ -1,0 +1,336 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>長文T 第1講</title>
+<style>
+@page { size: A4 portrait; margin: 14mm 13mm 12mm 13mm; }
+
+:root {
+  --en-size: 11.3pt;      /* 英文の級数 */
+  --en-leading: 3.05;     /* 英文の行送り（この余白に S/V/O/C を書き込む） */
+  --ja-size: 9.4pt;
+  --gutter: 13mm;         /* 段落番号・文番号を置く左の柱 */
+  --rule: #000;
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: #f0efec;
+  color: #000;
+  font-family: "Century Schoolbook", "New Century Schoolbook", Century,
+               "Times New Roman", "Nimbus Roman", serif;
+}
+
+.sheet {
+  width: 210mm; min-height: 297mm;
+  padding: 14mm 13mm 12mm 13mm;
+  margin: 8mm auto; background: #fff;
+  box-shadow: 0 1px 6px rgba(0,0,0,.25);
+}
+
+.title {
+  margin: 0 0 9mm; text-align: center;
+  font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic",
+               "YuGothic", Meiryo, "Noto Sans JP", sans-serif;
+  font-weight: 800; font-size: 27pt; letter-spacing: .14em;
+}
+.lesson {
+  font-family: "Hiragino Mincho ProN", "Yu Mincho", "YuMincho", "MS Mincho",
+               "Noto Serif JP", serif;
+  font-size: 10.5pt; margin: 0 0 4mm 1mm;
+}
+
+/* ---- 1文＝1ブロック（英文＋和訳）。改ページで割らない ---- */
+.s { display: flex; align-items: flex-start; break-inside: avoid; page-break-inside: avoid; }
+.s + .s { margin-top: 2.4mm; }
+.para + .para { margin-top: 3.4mm; }
+
+.gut {
+  flex: 0 0 var(--gutter); position: relative;
+  font-size: 10.5pt; line-height: 1.25;
+  padding-top: 1.0em;               /* 文番号を英文1行目の高さにそろえる */
+}
+.pbox {                             /* 段落番号は文番号の真上に置く */
+  position: absolute; top: -.48em; left: 0;
+  width: 5.2mm; height: 5.2mm; line-height: 5.0mm;
+  border: 1.1px solid #000; text-align: center;
+  font-family: "Hiragino Mincho ProN", "Yu Mincho", serif; font-size: 10pt;
+}
+.sno {
+  display: block; margin-left: .8mm;
+  font-family: "Hiragino Mincho ProN", "Yu Mincho", serif;
+}
+.body { flex: 1 1 auto; min-width: 0; }
+
+/* ---- 英文：全行に下線罫を敷き、行間を大きく空ける ---- */
+.en {
+  margin: 0; text-align: justify; text-justify: inter-word;
+  font-size: var(--en-size); line-height: var(--en-leading);
+  letter-spacing: .012em; word-spacing: .04em;
+  text-decoration: underline;
+  text-decoration-thickness: from-font;
+  text-decoration-skip-ink: none;      /* g,y の下でも罫を切らない */
+  text-underline-offset: .30em;
+  hyphens: none;
+}
+.en .mk {   /* 下線部番号 (1) (2) … */
+  font-size: 7.5pt; vertical-align: -.32em; letter-spacing: 0;
+  text-decoration: none; display: inline-block; margin-right: .1em;
+}
+
+/* ---- 和訳 ---- */
+.ja {
+  margin: .5em 0 0; text-indent: 1em;
+  font-family: "Hiragino Mincho ProN", "Yu Mincho", "YuMincho", "MS Mincho",
+               "Noto Serif JP", serif;
+  font-size: var(--ja-size); line-height: 2.05; text-align: justify;
+}
+.ja-blank {
+  margin: .9em 0 .2em;
+  border-bottom: .6px solid #888;
+  height: 0;
+}
+.ja-blank + .ja-blank { margin-top: 1.9em; }
+
+/* ---- 語注・出典 ---- */
+.notes {
+  margin-top: 7mm; padding-top: 2.5mm; border-top: .8px solid #000;
+  font-family: "Hiragino Mincho ProN", "Yu Mincho", serif; font-size: 9pt; line-height: 1.9;
+}
+.notes b { font-family: inherit; font-weight: 600; }
+.src { margin-top: 2mm; font-size: 8.6pt; }
+
+.pageno { margin-top: 6mm; text-align: center; font-size: 9pt; }
+
+@media print {
+  body { background: #fff; }
+  .sheet { width: auto; min-height: 0; margin: 0; padding: 0; box-shadow: none; }
+  .pageno { display: none; }
+}
+</style>
+</head><body>
+<div class="sheet">
+<h1 class="title">長文T 第1講</h1>
+<div class="lesson">第 1 講</div>
+<div class="para">
+<div class="s">
+<div class="gut">
+<span class="pbox">1</span>
+<span class="sno">1、</span>
+</div>
+<div class="body">
+<p class="en">To get a sense of how completely revolutionary have been the changes of the last two hundred years or so, it helps to have a long view of demography.</p>
+<p class="ja">ここ200年ほどの変化がどれほど完全に革命的なものであったかを実感するには、人口統計を長い目で眺めてみるとよい。</p>
+</div></div>
+<div class="s">
+<div class="gut">
+<span class="sno">2、</span>
+</div>
+<div class="body">
+<p class="en">When in 47 BC Julius Caesar was appointed perpetual dictator of the Roman Republic his domain stretched from what is now called Spain to modern Greece, as far north as Normandy in France, and much of the rest of the Mediterranean, a region that today contains over thirty countries.</p>
+<p class="ja">紀元前47年にユリウス・カエサルがローマ共和国の終身独裁官に任命されたとき、その支配領域は、現在スペインと呼ばれている地域から現代のギリシャにまで、北はフランスのノルマンディーにまで、さらに地中海沿岸の残りの大部分にまで広がっていたが、そこは今日では30を超える国々を含む地域である。</p>
+</div></div>
+<div class="s">
+<div class="gut">
+<span class="sno">3、</span>
+</div>
+<div class="body">
+<p class="en">The population of these vast lands comprised around 50 million people, which was about 20% of a world population of approximately 250 million.</p>
+<p class="ja">これらの広大な土地の人口は約5,000万人から成っており、それはおよそ2億5,000万人という世界人口の約20％にあたった。</p>
+</div></div>
+<div class="s">
+<div class="gut">
+<span class="sno">4、</span>
+</div>
+<div class="body">
+<p class="en">More than eighteen centuries later, when Queen Victoria ascended the British throne in 1837, the number of people living on earth had grown to something like 1,000 million, a fourfold increase.</p>
+<p class="ja">それから18世紀以上のちの1837年、ヴィクトリア女王が英国の王位に就いたときには、地球上で暮らす人の数は10億人ほどにまで増えており、4倍の増加であった。</p>
+</div></div>
+<div class="s">
+<div class="gut">
+<span class="sno">5、</span>
+</div>
+<div class="body">
+<p class="en">Yet less than two hundred years after Victoria’s coronation, world population has increased a further seven times — nearly twice the growth in a tenth of the time.</p>
+<p class="ja">ところが、ヴィクトリア女王の戴冠から200年も経たないうちに、世界人口はさらに7倍に増えている ― 10分の1の時間で、ほぼ2倍の増加である。</p>
+</div></div>
+<div class="s">
+<div class="gut">
+<span class="sno">6、</span>
+</div>
+<div class="body">
+<p class="en"><span class="mk">(1)</span>This latter multiplication is astonishingly rapid, and has had a transformative global impact.</p>
+<p class="ja">この後者の増加は驚くほど急速であり、世界を一変させるほどの影響を及ぼしてきた。</p>
+</div></div>
+</div>
+<div class="para">
+<div class="s">
+<div class="gut">
+<span class="pbox">2</span>
+<span class="sno">1、</span>
+</div>
+<div class="body">
+<p class="en">Between 1840 and 1857 Queen Victoria gave birth to nine children, all of whom survived into adulthood.</p>
+<p class="ja">1840年から1857年にかけて、ヴィクトリア女王は9人の子を産み、その全員が大人になるまで生き延びた。</p>
+</div></div>
+<div class="s">
+<div class="gut">
+<span class="sno">2、</span>
+</div>
+<div class="body">
+<p class="en">Britain’s previous female monarch, Queen Anne, had died in 1714, aged forty-nine.</p>
+<p class="ja">英国のその前の女性君主であるアン女王は、1714年に49歳で亡くなっていた。</p>
+</div></div>
+<div class="s">
+<div class="gut">
+<span class="sno">3、</span>
+</div>
+<div class="body">
+<p class="en">She had eighteen pregnancies but her tragedy was that not a single child survived her.</p>
+<p class="ja">彼女は18回妊娠したが、子どもが一人として自分より長生きしなかったというのが彼女の悲劇であった。</p>
+</div></div>
+<div class="s">
+<div class="gut">
+<span class="sno">4、</span>
+</div>
+<div class="body">
+<p class="en">By 1930, just twenty-nine years after the death of Queen Victoria, another great British *matriarch, the Queen Mother, had produced only two children, Elizabeth II and Margaret.</p>
+<p class="ja">ヴィクトリア女王の死からわずか29年後の1930年までに、英国のもう一人の偉大な女家長である皇太后は、エリザベス2世とマーガレットという2人の子どもしかもうけていなかった。</p>
+</div></div>
+<div class="s">
+<div class="gut">
+<span class="sno">5、</span>
+</div>
+<div class="body">
+<p class="en">These facts about three queens — Anne, Victoria and Elizabeth the Queen Mother — neatly represent <span class="mk">(2)</span>the two trends that began in Britain between the eighteenth and twentieth centuries and which have subsequently spread across the world.</p>
+<p class="ja">アン、ヴィクトリア、そして皇太后エリザベスという3人の女王・王妃に関するこれらの事実は、18世紀から20世紀にかけて英国で始まり、その後世界中に広まった2つの傾向を、みごとに表している。</p>
+</div></div>
+</div>
+<div class="para">
+<div class="s">
+<div class="gut">
+<span class="pbox">3</span>
+<span class="sno">1、</span>
+</div>
+<div class="body">
+<p class="en">The first was a *precipitous drop in infant mortality, with the death of a child becoming mercifully irregular rather than a common agony for parents.</p>
+<p class="ja">1つ目は乳幼児死亡率の急激な低下であり、それに伴って、子どもの死は、親にとってありふれた苦悩であるどころか、ありがたいことにまれなことになっていった。</p>
+</div></div>
+<div class="s">
+<div class="gut">
+<span class="sno">2、</span>
+</div>
+<div class="body">
+<p class="en">The second, which followed, was a dramatic reduction in the average number of children born per woman.</p>
+<p class="ja">それに続いて起きた2つ目は、女性1人あたりに生まれる子どもの平均数の劇的な減少であった。</p>
+</div></div>
+<div class="s">
+<div class="gut">
+<span class="sno">3、</span>
+</div>
+<div class="body">
+<p class="en">In Queen Anne’s time, losing child after child was common.</p>
+<p class="ja">アン女王の時代には、次々と子どもを失うことはよくあることだった。</p>
+</div></div>
+<div class="s">
+<div class="gut">
+<span class="sno">4、</span>
+</div>
+<div class="body">
+<p class="en">In mid-Victorian Britain, having a large brood was still the norm.</p>
+<p class="ja">ヴィクトリア朝中期の英国では、多くの子を持つことがなお当たり前であった。</p>
+</div></div>
+<div class="s">
+<div class="gut">
+<span class="sno">5、</span>
+</div>
+<div class="body">
+<p class="en">Its complete survival into adulthood was unusual (in this, Victoria had luck as well as wealth in her favour) but would shortly become usual.</p>
+<p class="ja">その子どもたちが全員大人になるまで生き延びることはまれであった（この点で、ヴィクトリアには富だけでなく幸運も味方していた）が、まもなくそれが当たり前のことになろうとしていた。</p>
+</div></div>
+<div class="s">
+<div class="gut">
+<span class="sno">6、</span>
+</div>
+<div class="body">
+<p class="en">By the interwar years of the twentieth century, the Queen Mother’s expectation that both her daughters would survive into adulthood was quite normal, in Britain at least.</p>
+<p class="ja">20世紀の両大戦間期までには、2人の娘がともに大人になるまで生きるだろうという皇太后の予想は、少なくとも英国では、ごく普通のものであった。</p>
+</div></div>
+</div>
+<div class="para">
+<div class="s">
+<div class="gut">
+<span class="pbox">4</span>
+<span class="sno">1、</span>
+</div>
+<div class="body">
+<p class="en">When Queen Victoria was born in 1819, only a small number of Europeans — around 30,000 — were living in Australia.</p>
+<p class="ja">1819年にヴィクトリア女王が生まれたとき、オーストラリアに住んでいたヨーロッパ人は、3万人ほどというわずかな数にすぎなかった。</p>
+</div></div>
+<div class="s">
+<div class="gut">
+<span class="sno">2、</span>
+</div>
+<div class="body">
+<p class="en">The number of indigenous Australians at that time is uncertain, but estimates range from 300,000 to 1 million.</p>
+<p class="ja">当時の先住オーストラリア人の数は定かではないが、推定は30万人から100万人までの幅がある。</p>
+</div></div>
+<div class="s">
+<div class="gut">
+<span class="sno">3、</span>
+</div>
+<div class="body">
+<p class="en">When Victoria died at the start of the twentieth century, there were fewer than 100,000, while Australians of European origin numbered nearly 4 million, more than a hundred times as many as eighty years earlier.</p>
+<p class="ja">20世紀初頭にヴィクトリアが亡くなったとき、先住民は10万人を下回っていたが、一方でヨーロッパ系のオーストラリア人は400万人近くに達しており、これは80年前の100倍以上であった。</p>
+</div></div>
+<div class="s">
+<div class="gut">
+<span class="sno">4、</span>
+</div>
+<div class="body">
+<p class="en"><span class="mk">(3)</span>This transformation in the size and composition of a continental population occurred in the space of a single lifetime.</p>
+<p class="ja">一つの大陸の人口の規模と構成におけるこの変化は、たった一人の人間の一生のうちに起こったのである。</p>
+</div></div>
+<div class="s">
+<div class="gut">
+<span class="sno">5、</span>
+</div>
+<div class="body">
+<p class="en">It changed Australia completely and forever, and would have a significant impact beyond Australia’s shores, as the country came to play a major role in *provisioning and *manning British efforts in both world wars.</p>
+<p class="ja">それはオーストラリアを完全に、そして永久に変え、さらにはオーストラリアの海岸を越えたところにまで大きな影響を及ぼすことになった。というのも、この国が二度の世界大戦において英国の戦いに食糧と人員を供給するうえで大きな役割を果たすようになったからである。</p>
+</div></div>
+<div class="s">
+<div class="gut">
+<span class="sno">6、</span>
+</div>
+<div class="body">
+<p class="en">A similar story can be told of Canada and New Zealand.</p>
+<p class="ja">同様の話はカナダやニュージーランドについても語ることができる。</p>
+</div></div>
+</div>
+<div class="para">
+<div class="s">
+<div class="gut">
+<span class="pbox">5</span>
+<span class="sno">1、</span>
+</div>
+<div class="body">
+<p class="en"><span class="mk">(4)</span>These startling facts — the rapid but selective acceleration of population growth; plummeting infant mortality rates; falls in fertility; the nineteenth-century outpouring of European populations to lands beyond Europe — are all connected.</p>
+<p class="ja">これらの驚くべき事実 ― 急速ではあるが一様ではない人口増加の加速、急落する乳幼児死亡率、出生率の低下、19世紀におけるヨーロッパの人々のヨーロッパ外の土地への流出 ― は、すべてつながっている。</p>
+</div></div>
+<div class="s">
+<div class="gut">
+<span class="sno">2、</span>
+</div>
+<div class="body">
+<p class="en">They are born of the same profound social changes that accompanied the industrial revolution and have proved to be a formidable influence on the course of history, empowering some countries and communities at the expense of others, determining the fate of economies and empires, and laying the foundations of today’s world.</p>
+<p class="ja">それらは、産業革命に伴って生じた同じ深遠な社会変化から生まれたものであり、歴史の流れに対してきわめて大きな影響を及ぼしてきたことがわかっている。すなわち、他の国や共同体を犠牲にして一部の国や共同体に力を与え、経済と帝国の運命を決定し、今日の世界の基礎を築いてきたのである。</p>
+</div></div>
+</div>
+<div class="notes">
+（注）<b>matriarch</b>: 女家長　<b>precipitous</b>: 急激な　<b>provision</b>: …に食糧を供給する　<b>man</b>: …に人員を配する
+<div class="src">From Human Tide by Paul Morland, copyright © 2019.（英語T（長文）第1講）</div>
+</div>
+</div>
+</body></html>
