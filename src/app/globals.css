@@ -1,0 +1,86 @@
+@import "tailwindcss";
+
+@theme {
+  --color-ink-50: #f7f7f6;
+  --color-ink-100: #ecebe8;
+  --color-ink-200: #dcdad5;
+  --color-ink-300: #bcb9b1;
+  --color-ink-400: #908c83;
+  --color-ink-500: #6b675f;
+  --color-ink-600: #514e48;
+  --color-ink-700: #3b3934;
+  --color-ink-800: #262420;
+  --color-ink-900: #16150f;
+
+  --color-brand-50: #eef2ff;
+  --color-brand-100: #e0e7ff;
+  --color-brand-200: #c7d2fe;
+  --color-brand-400: #818cf8;
+  --color-brand-500: #6366f1;
+  --color-brand-600: #4f46e5;
+  --color-brand-700: #4338ca;
+
+  --color-paper: #faf9f7;
+
+  --font-sans:
+    ui-sans-serif, system-ui, -apple-system, "Hiragino Kaku Gothic ProN",
+    "Hiragino Sans", "Noto Sans JP", Meiryo, sans-serif;
+  --font-reading: Georgia, "Times New Roman", "Hiragino Mincho ProN", serif;
+}
+
+:root {
+  color-scheme: light;
+  --surface: #ffffff;
+  --surface-muted: var(--color-paper);
+  --border: var(--color-ink-200);
+  --text: var(--color-ink-900);
+  --text-muted: var(--color-ink-500);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --surface: #1b1a17;
+    --surface-muted: #131210;
+    --border: #322f2a;
+    --text: #efece5;
+    --text-muted: #a09b90;
+  }
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--surface-muted);
+  color: var(--text);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* 学習中は英文が主役なので、本文だけ読みやすい字送りにする */
+.reading-en {
+  font-family: var(--font-reading);
+  letter-spacing: 0.01em;
+}
+
+/* 選択中の文をなぞる下線。再生位置が目で追える。 */
+@keyframes sf-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+.sf-speaking {
+  animation: sf-pulse 1.6s ease-in-out infinite;
+}
+
+/* テキスト選択の色をアクセントに寄せる（弱点マークのドラッグ操作用） */
+.sf-selectable ::selection {
+  background: var(--color-brand-200);
+  color: var(--color-ink-900);
+}
