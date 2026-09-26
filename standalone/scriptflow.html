@@ -1,0 +1,1738 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>
+:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;font:14px system-ui}
+img{max-width:100%}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<title>ScriptFlow</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap">
+<style>
+:root{
+  color-scheme: light;
+  --paper:#f5f2ea;
+  --surface:#fffefa;
+  --surface-2:#faf7ef;
+  --ink:#1c1a15;
+  --muted:#6e685a;
+  --faint:#918a78;
+  --border:#e3dccd;
+  --border-strong:#cfc6b1;
+  --primary:#1d5d57;
+  --on-primary:#ffffff;
+  --primary-ink:#0f3b37;
+  --primary-wash:#e2eeeb;
+  --marker:#a8600f;
+  --marker-wash:#fbeed3;
+  --speak-wash:#fdf2cd;
+  --ok:#2f6b46;
+  --ok-wash:#e2efe6;
+  --danger:#8f3320;
+  --shadow:0 1px 2px rgba(28,26,21,.06), 0 8px 24px -16px rgba(28,26,21,.28);
+  --serif:"Source Serif 4", Georgia, "Times New Roman", serif;
+  --sans:ui-sans-serif, system-ui, -apple-system, "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Noto Sans JP", Meiryo, sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme: dark;
+    --paper:#131310;
+    --surface:#1e1d18;
+    --surface-2:#191814;
+    --ink:#ece7da;
+    --muted:#a29b88;
+    --faint:#867f6d;
+    --border:#332f26;
+    --border-strong:#464034;
+    --primary:#63b8ab;
+    --on-primary:#10231f;
+    --primary-ink:#9ad6cb;
+    --primary-wash:#1a2f2c;
+    --marker:#d79a4e;
+    --marker-wash:#2f2618;
+    --speak-wash:#302713;
+    --ok:#6fb98a;
+    --ok-wash:#1b2b21;
+    --danger:#dd8b74;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 28px -18px rgba(0,0,0,.8);
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --on-primary:#10231f;
+  --paper:#131310;
+  --surface:#1e1d18;
+  --surface-2:#191814;
+  --ink:#ece7da;
+  --muted:#a29b88;
+  --faint:#867f6d;
+  --border:#332f26;
+  --border-strong:#464034;
+  --primary:#63b8ab;
+  --primary-ink:#9ad6cb;
+  --primary-wash:#1a2f2c;
+  --marker:#d79a4e;
+  --marker-wash:#2f2618;
+  --speak-wash:#302713;
+  --ok:#6fb98a;
+  --ok-wash:#1b2b21;
+  --danger:#dd8b74;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 28px -18px rgba(0,0,0,.8);
+}
+
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0; background:var(--paper); color:var(--ink);
+  font-family:var(--sans); font-size:15px; line-height:1.7;
+  -webkit-font-smoothing:antialiased;
+}
+button,select,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer;background:none;border:none;padding:0}
+:focus-visible{outline:2px solid var(--primary);outline-offset:2px;border-radius:4px}
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+
+/* ---------- shell ---------- */
+.shell{min-height:100%;display:flex;flex-direction:column}
+.topbar{
+  position:sticky; top:env(safe-area-inset-top,0px); z-index:40;
+  background:color-mix(in srgb, var(--surface) 92%, transparent);
+  backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--border);
+}
+.topbar-in{
+  max-width:820px;margin:0 auto;padding:10px 16px;
+  display:flex;align-items:center;gap:10px;
+}
+.brand{
+  display:flex;align-items:baseline;gap:7px;
+  font-family:var(--serif);font-weight:600;font-size:18px;letter-spacing:-.01em;
+  white-space:nowrap;flex-shrink:0;
+}
+.brand .dot{
+  width:8px;height:8px;border-radius:50%;background:var(--marker);
+  display:inline-block;flex:none;translate:0 -2px;
+}
+.nav{margin-left:auto;display:flex;gap:2px;flex-shrink:0}
+.nav button{
+  padding:6px 11px;border-radius:999px;font-size:13px;color:var(--muted);
+  white-space:nowrap;transition:background .15s,color .15s;
+}
+.nav button:hover{color:var(--ink);background:var(--surface-2)}
+.nav button[aria-current="page"]{background:var(--primary);color:var(--on-primary)}
+main{flex:1;max-width:820px;width:100%;margin:0 auto;padding-block:24px 40px;padding-inline:16px}
+.wide{max-width:820px}
+
+/* ---------- type ---------- */
+h1,h2,h3{font-family:var(--serif);font-weight:600;line-height:1.25;text-wrap:balance;margin:0}
+h1{font-size:clamp(26px,5.2vw,36px);letter-spacing:-.02em}
+h2{font-size:19px}
+h3{font-size:16px}
+.lede{color:var(--muted);font-size:15px;line-height:1.8}
+.eyebrow{
+  font-size:11px;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--faint);font-weight:600;
+}
+.num{font-variant-numeric:tabular-nums}
+.en{font-family:var(--serif);letter-spacing:.005em}
+
+/* ---------- pieces ---------- */
+.card{
+  background:var(--surface);border:1px solid var(--border);border-radius:14px;
+}
+.chip{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:2px 9px;border-radius:999px;font-size:11.5px;
+  border:1px solid var(--border);color:var(--muted);white-space:nowrap;
+}
+.chip.lvl{background:var(--primary-wash);color:var(--primary-ink);border-color:transparent;font-weight:600}
+.chip.k-listening{background:var(--primary-wash);color:var(--primary-ink);border-color:transparent}
+.chip.k-vocab{background:var(--marker-wash);color:var(--marker);border-color:transparent}
+.chip.k-grammar{background:var(--speak-wash);color:var(--marker);border-color:transparent}
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:7px;
+  padding:9px 16px;border-radius:10px;font-size:14px;font-weight:600;
+  background:var(--primary);color:var(--on-primary);transition:filter .15s;
+}
+.btn:hover{filter:brightness(1.1)}
+.btn:disabled{opacity:.5;cursor:default;filter:none}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--border-strong);font-weight:500}
+.btn.ghost:hover{background:var(--surface-2);filter:none}
+.btn.sm{padding:6px 12px;font-size:13px}
+textarea,input[type=text]{
+  width:100%;padding:12px 14px;border:1px solid var(--border-strong);border-radius:12px;
+  background:var(--surface);line-height:1.8;resize:vertical;
+}
+textarea::placeholder{color:var(--faint)}
+select{
+  border:1px solid var(--border);border-radius:9px;background:var(--surface);
+  padding:4px 7px;font-size:12.5px;
+}
+.divider{height:1px;background:var(--border);border:0;margin:0}
+.muted{color:var(--muted)}
+.tiny{font-size:12.5px}
+.note{
+  border-left:3px solid var(--marker);background:var(--marker-wash);
+  padding:10px 14px;border-radius:0 10px 10px 0;font-size:13px;color:var(--ink);
+}
+.stack{display:flex;flex-direction:column}
+.row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+
+/* ---------- home ---------- */
+.hero{padding-block:8px 26px}
+.hero h1{margin-bottom:12px}
+.hero .lede{max-width:56ch}
+.steps{
+  display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+  margin-top:22px;
+}
+.step{padding:12px 14px;border-radius:12px;background:var(--surface);border:1px solid var(--border)}
+.step .n{
+  font-family:var(--serif);font-size:13px;font-weight:600;color:var(--marker);
+  display:block;margin-bottom:3px;
+}
+.step b{display:block;font-size:14px;margin-bottom:2px}
+.step span.d{font-size:12.5px;color:var(--muted);line-height:1.6}
+.shelf{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));margin-top:14px}
+.mat{
+  text-align:left;display:flex;flex-direction:column;gap:8px;padding:16px;
+  background:var(--surface);border:1px solid var(--border);border-radius:14px;
+  transition:border-color .15s, box-shadow .15s;width:100%;
+}
+.mat:hover{border-color:var(--border-strong);box-shadow:var(--shadow)}
+.mat h3{font-size:17px}
+.mat .ja{font-size:12.5px;color:var(--muted);margin-top:-4px}
+.mat .sum{font-size:12.5px;color:var(--muted);line-height:1.65;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.bar{height:4px;border-radius:999px;background:var(--border);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--primary);border-radius:999px;transition:width .3s}
+.mat footer{display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--faint);margin-top:2px}
+.sec-head{display:flex;align-items:baseline;gap:10px;margin:30px 0 6px}
+.sec-head h2{font-size:17px}
+
+/* ---------- study ---------- */
+.study-head{margin-bottom:6px}
+.study-head h1{font-size:clamp(22px,4.4vw,29px)}
+.tabs{
+  display:flex;gap:3px;border-bottom:1px solid var(--border);margin:18px 0 6px;
+  position:sticky;top:calc(env(safe-area-inset-top,0px) + 53px);z-index:20;
+  background:var(--paper);
+}
+.tabs button{
+  padding:9px 13px;font-size:13.5px;color:var(--muted);
+  border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap;
+}
+.tabs button[aria-current="true"]{color:var(--ink);border-bottom-color:var(--marker);font-weight:600}
+.tabs .count{font-size:11px;color:var(--faint);margin-left:4px}
+
+.part{margin-top:22px}
+.part-head{display:flex;gap:10px;align-items:baseline;padding:0 4px 8px}
+.part-head .pn{
+  font-family:var(--serif);font-size:12px;font-weight:600;color:var(--marker);
+  flex:none;padding-top:2px;
+}
+.part-head b{font-size:14.5px;display:block}
+.part-head .s{font-size:12.5px;color:var(--muted);line-height:1.6;display:block}
+.sent{
+  display:flex;gap:11px;padding:9px 10px;border-radius:11px;
+  transition:background .15s;scroll-margin-top:120px;
+}
+.sent:hover{background:var(--surface-2)}
+.sent.cur{background:var(--primary-wash)}
+.sent.speaking{background:var(--speak-wash)}
+.sent .no{
+  flex:none;width:25px;height:25px;border-radius:50%;margin-top:3px;
+  font-size:11.5px;font-variant-numeric:tabular-nums;
+  background:var(--surface-2);border:1px solid var(--border);color:var(--muted);
+  display:flex;align-items:center;justify-content:center;transition:all .15s;
+}
+.sent:hover .no{border-color:var(--primary);color:var(--primary)}
+.sent.cur .no{background:var(--primary);border-color:var(--primary);color:var(--on-primary)}
+.sent .body{min-width:0;flex:1}
+.sent .txt{
+  font-family:var(--serif);font-size:17.5px;line-height:1.85;margin:0;
+  cursor:text;
+}
+.sent.done .txt{color:var(--muted)}
+.sent .ja{font-size:13px;line-height:1.75;color:var(--muted);margin:3px 0 0}
+.sent .reveal{
+  font-size:12px;color:var(--faint);text-decoration:underline;
+  text-underline-offset:3px;margin-top:3px;
+}
+.sent .reveal:hover{color:var(--ink)}
+.sent .acts{flex:none;display:flex;gap:2px;align-items:flex-start;padding-top:3px}
+.sent .acts button{
+  padding:4px 7px;border-radius:8px;font-size:12px;color:var(--faint);
+  opacity:0;transition:opacity .12s, background .12s;
+}
+.sent:hover .acts button,.sent .acts button:focus-visible{opacity:1}
+@media (hover:none){.sent .acts button{opacity:1}}
+.sent .acts button:hover{background:var(--border)}
+.sent .acts .read{opacity:1;color:var(--ok);background:var(--ok-wash);font-weight:600}
+.sent .marks{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
+.sent .marks a{text-decoration:none}
+::selection{background:var(--speak-wash);color:var(--ink)}
+
+.menu{position:relative}
+.pop{
+  position:absolute;right:0;top:100%;margin-top:4px;z-index:50;width:min(250px,72vw);
+  background:var(--surface);border:1px solid var(--border-strong);border-radius:12px;
+  box-shadow:var(--shadow);overflow:hidden;text-align:left;
+}
+.pop p{margin:0;padding:9px 12px;font-size:12px;color:var(--muted);border-bottom:1px solid var(--border)}
+.pop button{display:block;width:100%;padding:10px 12px;text-align:left;font-size:13.5px;opacity:1!important}
+.pop button:hover{background:var(--surface-2)}
+.scrim{position:fixed;inset:0;z-index:45}
+
+/* ---------- player ---------- */
+.player{
+  position:sticky;bottom:0;z-index:30;
+  border-top:1px solid var(--border);
+  background:color-mix(in srgb, var(--surface) 94%, transparent);
+  backdrop-filter:blur(10px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+.player-in{max-width:820px;margin:0 auto;padding:10px 16px}
+.player .main{display:flex;align-items:center;gap:6px}
+.play{
+  width:42px;height:42px;border-radius:50%;background:var(--primary);color:var(--on-primary);
+  display:flex;align-items:center;justify-content:center;font-size:14px;flex:none;
+}
+.skip{padding:8px 9px;border-radius:9px;color:var(--muted);font-size:12px;flex:none}
+.skip:hover{background:var(--surface-2);color:var(--ink)}
+.pos{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+.player .opts{
+  display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;
+  margin-top:9px;font-size:12px;color:var(--muted);
+}
+.player label{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+.player input[type=checkbox]{accent-color:var(--primary);width:14px;height:14px;margin:0}
+.rng{display:flex;gap:4px;align-items:center;flex-wrap:wrap}
+.rng button{
+  padding:2px 9px;border-radius:999px;font-size:11.5px;border:1px solid var(--border);
+  color:var(--muted);white-space:nowrap;
+}
+.rng button[aria-pressed="true"]{background:var(--primary);color:var(--on-primary);border-color:transparent}
+
+/* ---------- vocab / marks ---------- */
+.vlist{display:grid;gap:10px;margin-top:14px}
+.v{display:flex;gap:12px;padding:14px;background:var(--surface);border:1px solid var(--border);border-radius:13px}
+.v .word{font-family:var(--serif);font-size:17px;font-weight:600}
+.v .ph{font-size:12px;color:var(--faint);font-family:var(--serif)}
+.v .mean{font-size:13.5px;margin-top:3px}
+.v .ex{
+  font-family:var(--serif);font-size:13.5px;color:var(--muted);line-height:1.7;
+  margin-top:7px;padding-left:10px;border-left:2px solid var(--border);
+}
+.v .ex .exja{font-family:var(--sans);font-size:12.5px;display:block;margin-top:2px}
+.v .side{flex:none;display:flex;flex-direction:column;gap:5px;align-items:flex-end}
+.learned{background:var(--ok-wash);color:var(--ok)!important;border-color:transparent!important;font-weight:600}
+
+.mark{padding:15px;background:var(--surface);border:1px solid var(--border);border-radius:13px;scroll-margin-top:120px}
+.mark.res{opacity:.62}
+.mark .q{font-family:var(--serif);font-size:15.5px;line-height:1.75;margin:8px 0 0}
+.mark .hl{background:var(--speak-wash);padding:0 2px;border-radius:2px;font-weight:600}
+.mark .qja{font-size:12.5px;color:var(--muted);margin:3px 0 0}
+.exp{margin-top:12px;padding-top:12px;border-top:1px dashed var(--border)}
+.exp .head{font-family:var(--serif);font-size:15px;font-weight:600;color:var(--primary-ink);margin-bottom:6px}
+:root[data-theme="dark"] .exp .head{color:var(--primary)}
+.exp .b{font-size:13.5px;line-height:1.85;white-space:pre-wrap}
+.exp ul{margin:9px 0 0;padding-left:19px;font-size:13px;line-height:1.75}
+.exp .rel{margin-top:10px;padding:9px 12px;background:var(--surface-2);border-radius:9px;font-size:13px}
+.exp .rel .re{font-family:var(--serif)}
+.exp .rel .rj{color:var(--muted);font-size:12.5px;display:block;margin-top:2px}
+.spin{display:inline-block;width:12px;height:12px;border:2px solid var(--border-strong);
+  border-top-color:var(--primary);border-radius:50%;animation:sp .7s linear infinite;vertical-align:-2px}
+@keyframes sp{to{transform:rotate(360deg)}}
+.empty{text-align:center;padding:40px 20px;color:var(--muted);font-size:13.5px}
+
+/* ---------- create ---------- */
+.seg{display:flex;gap:4px;margin-bottom:14px}
+.seg button{padding:7px 13px;border-radius:9px;font-size:13.5px;color:var(--muted);border:1px solid transparent}
+.seg button[aria-pressed="true"]{background:var(--surface);border-color:var(--border);color:var(--ink);font-weight:600}
+.prog{margin-top:14px;padding:14px;border-radius:12px;background:var(--surface);border:1px solid var(--border);font-size:13.5px}
+.prog ol{margin:8px 0 0;padding-left:20px;line-height:1.9;font-size:13px;color:var(--muted)}
+.prog li.on{color:var(--ink);font-weight:600}
+.prog li.ok{color:var(--ok)}
+.err{border-left:3px solid var(--danger);background:color-mix(in srgb,var(--danger) 9%,transparent);
+  padding:10px 14px;border-radius:0 10px 10px 0;font-size:13px;margin-top:12px}
+@media (max-width:560px){
+  .steps{grid-template-columns:1fr}
+}
+@media (max-width:420px){
+  .sent .txt{font-size:16.5px}
+  .topbar-in{padding:9px 12px;gap:6px}
+  .nav button{padding:6px 9px;font-size:12.5px}
+}
+</style>
+<div class="shell">
+  <header class="topbar">
+    <div class="topbar-in">
+      <span class="brand"><span class="dot"></span>ScriptFlow</span>
+      <nav class="nav" id="nav">
+        <button type="button" data-go="home">本棚</button>
+        <button type="button" data-go="create">教材をつくる</button>
+        <button type="button" data-go="weakness">弱点ノート</button>
+      </nav>
+    </div>
+  </header>
+  <main id="view"></main>
+  <div id="playerSlot"></div>
+</div>
+<script>
+"use strict";
+/* ============================================================
+   ScriptFlow — 英文スクリプトを音読教材に変えて、つまずきを残す
+   1 ファイル版。保存は localStorage、読み上げは Web Speech API、
+   対訳と解説は claude.use("sample") 経由で Claude に頼む。
+   ============================================================ */
+
+/* ---------- 定数 ---------- */
+const LEVEL_LABEL = {
+  eiken3:"英検3級", kyotsu:"共通テスト", eiken2:"英検2級",
+  toeic:"TOEIC", toefl:"TOEFL", unknown:"レベル判定なし"
+};
+const WEAKNESS_LABEL = {
+  listening:"聞き取れない", vocab:"単語がわからない", grammar:"文法・構文がわからない"
+};
+const WEAKNESS_SHORT = { listening:"聞き取り", vocab:"単語", grammar:"文法" };
+const KINDS = ["listening","vocab","grammar"];
+const RATE_STEPS = [0.6,0.75,0.9,1.0,1.1,1.25];
+const MAX_INPUT_CHARS = 20000;
+const TRANSLATE_CHUNK = 20;
+
+/* ---------- 小道具 ---------- */
+const $ = (sel, root) => (root||document).querySelector(sel);
+function esc(s){
+  return String(s == null ? "" : s)
+    .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;").replace(/'/g,"&#39;");
+}
+function newId(prefix){
+  const r = (crypto && crypto.randomUUID) ? crypto.randomUUID().slice(0,8)
+    : Math.random().toString(36).slice(2,10);
+  return prefix + "_" + Date.now().toString(36) + r;
+}
+function clamp(n,min,max){ return Math.min(max, Math.max(min, n)); }
+function ago(ts){
+  const d = Math.floor((Date.now()-ts)/86400000);
+  if (d <= 0) return "今日";
+  if (d === 1) return "きのう";
+  if (d < 30) return d + "日前";
+  return Math.floor(d/30) + "か月前";
+}
+function truncate(s,max){ return s.length > max ? s.slice(0,max)+"…" : s; }
+
+/* ============================================================
+   1. 保存（localStorage）
+   端末の中だけに残る。読み書きは必ず try/catch で包む。
+   ============================================================ */
+const KEY = "scriptflow.v1";
+const blank = () => ({ materials:[], progress:{}, marks:[], settings:{} });
+let DB = blank();
+
+function load(){
+  try {
+    const raw = localStorage.getItem(KEY);
+    if (raw) {
+      const p = JSON.parse(raw);
+      DB = Object.assign(blank(), p);
+    }
+  } catch(e){ DB = blank(); }
+}
+let saveTimer = 0;
+function save(){
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    try { localStorage.setItem(KEY, JSON.stringify(DB)); } catch(e){ /* 保存できなくても動かす */ }
+  }, 60);
+}
+function getMaterial(id){ return DB.materials.find(m => m.id === id) || null; }
+function upsertMaterial(m){
+  const i = DB.materials.findIndex(x => x.id === m.id);
+  if (i >= 0) DB.materials[i] = m; else DB.materials.unshift(m);
+  save();
+}
+function deleteMaterial(id){
+  DB.materials = DB.materials.filter(m => m.id !== id);
+  delete DB.progress[id];
+  DB.marks = DB.marks.filter(k => k.materialId !== id);
+  save();
+}
+function progressOf(id){
+  if (!DB.progress[id]) DB.progress[id] = { readSentenceIds:[], learnedVocabIds:[], lastSentenceId:"", sessions:0 };
+  return DB.progress[id];
+}
+function marksOf(id){ return DB.marks.filter(k => k.materialId === id); }
+function settings(){
+  const s = DB.settings;
+  if (typeof s.rate !== "number") s.rate = 0.9;
+  if (typeof s.repeat !== "number") s.repeat = 1;
+  if (typeof s.autoAdvance !== "boolean") s.autoAdvance = true;
+  if (typeof s.loop !== "boolean") s.loop = false;
+  if (typeof s.voiceURI !== "string") s.voiceURI = "";
+  if (typeof s.showJa !== "boolean") s.showJa = false;
+  return s;
+}
+
+/* ============================================================
+   2. 文分割
+   原文を一字も変えないため、AI ではなくここで割る。
+   ============================================================ */
+const ABBR = new Set(["mr","mrs","ms","dr","prof","sr","jr","st","mt","vs","etc","e.g","i.e","cf",
+  "approx","dept","est","inc","ltd","co","corp","univ","fig","no","vol","jan","feb","mar","apr",
+  "jun","jul","aug","sep","sept","oct","nov","dec","mon","tue","wed","thu","fri","sat","sun",
+  "a.m","p.m","u.s","u.k","u.n","ph.d","b.a","m.a"]);
+
+function normalizeText(raw){
+  return String(raw)
+    .replace(/\r\n?/g,"\n")
+    .replace(/ /g," ")
+    .replace(/[ \t]+/g," ")
+    .replace(/\n{3,}/g,"\n\n")
+    .split("\n").map(l => l.trim()).join("\n")
+    .trim();
+}
+function hasOpenQuote(text){
+  let straight=0, open=0, close=0;
+  for (const ch of text){
+    if (ch === '"') straight++;
+    else if (ch === "“") open++;
+    else if (ch === "”") close++;
+  }
+  return straight % 2 === 1 || open > close;
+}
+function splitParagraph(par){
+  const out = []; let buf = "";
+  for (let i=0;i<par.length;i++){
+    const ch = par[i];
+    buf += ch;
+    if (ch !== "." && ch !== "!" && ch !== "?") continue;
+
+    let j = i+1;
+    while (j < par.length && /[.!?]/.test(par[j])) { buf += par[j]; j++; }
+    while (j < par.length && /["'”’)\]]/.test(par[j])) { buf += par[j]; j++; }
+
+    // 閉じていない引用符の中は会話文の途中なので割らない
+    if (buf.length < 200 && hasOpenQuote(buf)) { i = j-1; continue; }
+
+    const next = par.slice(j);
+    if (next.trim() === ""){ i = j-1; out.push(buf.trim()); buf=""; continue; }
+    if (!/^\s+["'“‘(\[]?[A-Z0-9]/.test(next)){ i = j-1; continue; }
+
+    const tail = buf.replace(/[.!?"'”’)\]]+$/,"");
+    const lastWord = (tail.split(/[\s(]/).pop() || "").toLowerCase();
+    if (ch === "." && ABBR.has(lastWord)){ i = j-1; continue; }
+    if (ch === "." && /(^|\s)[A-Za-z]$/.test(tail)){ i = j-1; continue; }
+    if (ch === "." && /\d$/.test(tail) && /^\s*\d/.test(next)){ i = j-1; continue; }
+
+    i = j-1; out.push(buf.trim()); buf = "";
+  }
+  if (buf.trim()) out.push(buf.trim());
+  return out.filter(s => s.length > 0);
+}
+function countWords(text){
+  const m = String(text).match(/[A-Za-z0-9'’-]+/g);
+  return m ? m.length : 0;
+}
+function segment(raw){
+  const text = normalizeText(raw);
+  const paragraphs = text.split(/\n\s*\n|\n/).map(p => p.trim()).filter(p => p.length > 0);
+  const sentences = [], paragraphOf = [];
+  paragraphs.forEach((par, pi) => {
+    for (const s of splitParagraph(par)){ sentences.push(s); paragraphOf.push(pi); }
+  });
+  return { sentences, paragraphOf, paragraphCount: paragraphs.length, wordCount: countWords(text) };
+}
+function chunkList(items, size){
+  const out = [];
+  for (let i=0;i<items.length;i+=size) out.push(items.slice(i,i+size));
+  return out;
+}
+
+/* ============================================================
+   3. 教材の組み立て
+   AI の返答が欠けていても（対訳なしでも）1 冊として成立させる。
+   ============================================================ */
+function normalizeParts(raw, total){
+  const sorted = raw.map(p => ({
+      title: p.title || "", summary: p.summary || "",
+      startSentence: clamp(Math.round(p.startSentence), 1, total),
+      endSentence: clamp(Math.round(p.endSentence), 1, total)
+    }))
+    .filter(p => p.endSentence >= p.startSentence)
+    .sort((a,b) => a.startSentence - b.startSentence);
+  if (!sorted.length) return [{ startSentence:1, endSentence:total, title:"本文", summary:"" }];
+
+  const out = []; let cursor = 1;
+  for (const p of sorted){
+    const start = Math.max(cursor, p.startSentence);
+    if (start > total) break;
+    const end = Math.max(start, p.endSentence);
+    out.push({ title:p.title, summary:p.summary, startSentence:start, endSentence:Math.min(end,total) });
+    cursor = Math.min(end,total) + 1;
+  }
+  if (!out.length) return [{ startSentence:1, endSentence:total, title:"本文", summary:"" }];
+  out[out.length-1].endSentence = total;
+  return out;
+}
+function fallbackParts(paragraphOf, total){
+  if (total === 0) return [];
+  const parts = []; let current = paragraphOf[0]; let start = 1;
+  for (let i=1;i<=total;i++){
+    const p = paragraphOf[i-1];
+    if (p !== current){
+      parts.push({ startSentence:start, endSentence:i-1, title:"パート"+(parts.length+1), summary:"" });
+      current = p; start = i;
+    }
+  }
+  parts.push({ startSentence:start, endSentence:total, title:"パート"+(parts.length+1), summary:"" });
+  if (parts.length > 8){
+    const merged = [];
+    for (let i=1;i<=total;i+=5){
+      merged.push({ startSentence:i, endSentence:Math.min(i+4,total), title:"パート"+(merged.length+1), summary:"" });
+    }
+    return merged;
+  }
+  return parts;
+}
+function findFirstSentenceWith(sentences, word){
+  const stem = (String(word).toLowerCase().split(/\s+/)[0] || "").replace(/[^a-z'-]/g,"");
+  if (!stem) return -1;
+  return sentences.findIndex(s => s.toLowerCase().includes(stem));
+}
+function deriveTitle(sentences){
+  const first = sentences[0] || "Untitled";
+  return first.split(/\s+/).slice(0,7).join(" ").replace(/[.,;:!?]+$/,"") || "Untitled";
+}
+function buildMaterial(input){
+  const seg = segment(input.text);
+  const id = input.id || newId("m");
+  const rawParts = (input.parts && input.parts.length)
+    ? normalizeParts(input.parts, seg.sentences.length)
+    : fallbackParts(seg.paragraphOf, seg.sentences.length);
+
+  const parts = rawParts.map((p,i) => ({
+    id: id+"_p"+(i+1), index:i,
+    title: (p.title||"").trim() || ("パート"+(i+1)),
+    summary: (p.summary||"").trim(),
+    sentenceIds: []
+  }));
+
+  const sentences = seg.sentences.map((en,i) => {
+    let pi = rawParts.findIndex(p => i+1 >= p.startSentence && i+1 <= p.endSentence);
+    const part = parts[pi >= 0 ? pi : parts.length-1];
+    const s = {
+      id: id+"_s"+(i+1), index:i, en,
+      ja: ((input.translations && input.translations.get(i+1)) || "").trim(),
+      partId: part.id
+    };
+    part.sentenceIds.push(s.id);
+    return s;
+  });
+
+  const usedParts = parts.filter(p => p.sentenceIds.length > 0);
+  usedParts.forEach((p,i) => { p.index = i; });
+
+  const vocab = (input.vocab || []).map((v,i) => {
+    const n = v.sentenceNumber;
+    const si = (n && n >= 1 && n <= sentences.length) ? n-1 : findFirstSentenceWith(seg.sentences, v.word);
+    const host = si >= 0 ? sentences[si] : undefined;
+    return {
+      id: id+"_v"+(i+1),
+      word: String(v.word||"").trim(),
+      phonetic: String(v.phonetic||"").trim(),
+      pos: String(v.pos||"").trim(),
+      meaning: String(v.meaning||"").trim(),
+      example: host ? host.en : "",
+      exampleJa: String(v.exampleJa||"").trim() || (host ? host.ja : ""),
+      sentenceId: host ? host.id : ""
+    };
+  });
+
+  return {
+    id,
+    title: (input.title||"").trim() || deriveTitle(seg.sentences),
+    titleJa: (input.titleJa||"").trim(),
+    summary: (input.summary||"").trim(),
+    level: input.level || "unknown",
+    tags: input.tags || [],
+    wordCount: seg.wordCount || countWords(input.text),
+    source: input.source,
+    createdAt: input.createdAt || Date.now(),
+    parts: usedParts, sentences, vocab,
+    aiGenerated: !!input.aiGenerated,
+    notice: input.notice || ""
+  };
+}
+
+/* ============================================================
+   4. 読み上げ（Web Speech API）
+   ブラウザ内蔵の音声なので鍵も通信も要らない。
+   ============================================================ */
+const tts = {
+  supported(){ return typeof window !== "undefined" && "speechSynthesis" in window; },
+  voices(){
+    if (!tts.supported()) return [];
+    return speechSynthesis.getVoices()
+      .filter(v => v.lang.toLowerCase().startsWith("en"))
+      .sort((a,b) => {
+        if (a.default !== b.default) return a.default ? -1 : 1;
+        if (a.localService !== b.localService) return a.localService ? -1 : 1;
+        return a.name.localeCompare(b.name);
+      });
+  },
+  cancel(){ if (tts.supported()) speechSynthesis.cancel(); },
+  speak(text, opts){
+    if (!tts.supported()){ opts.onError && opts.onError("このブラウザは音声合成に対応していません。"); return; }
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.rate = opts.rate; u.lang = "en-US";
+    if (opts.voiceURI){
+      const v = speechSynthesis.getVoices().find(x => x.voiceURI === opts.voiceURI);
+      if (v){ u.voice = v; u.lang = v.lang; }
+    }
+    u.onend = () => opts.onEnd && opts.onEnd();
+    u.onerror = (e) => {
+      // 停止操作でも error が飛ぶブラウザがあるので区別する
+      if (e.error === "canceled" || e.error === "interrupted") return;
+      opts.onError && opts.onError(e.error || "音声の再生に失敗しました。");
+    };
+    // Chrome は cancel 直後の speak を取りこぼすことがある
+    setTimeout(() => speechSynthesis.speak(u), 0);
+  }
+};
+
+/* ---------- 同梱のサンプル教材（対訳・パート・語義は作り込み済み） ---------- */
+const SAMPLES = [{"id":"sample_finding_her_voice","title":"Finding Her Voice","titleJa":"自分の声を見つけるまで","summary":"人前で話すのが苦手だった高校生ミナが、放送部の原稿読みをきっかけに、自分の声で話すことを覚えていく話。高校生活と成長がテーマの、共通テストに近い長さと語彙。","level":"kyotsu","tags":["高校生活","成長","スピーチ"],"wordCount":176,"source":"sample","parts":[{"id":"sample_finding_her_voice_p1","index":0,"title":"後ろの席が好きだった","summary":"目立たない場所を選んでいたミナの、これまでの自己像。","sentenceIds":["sample_finding_her_voice_s1","sample_finding_her_voice_s2","sample_finding_her_voice_s3","sample_finding_her_voice_s4"]},{"id":"sample_finding_her_voice_p2","index":1,"title":"突然まわってきた原稿","summary":"代役として放送を読むことになり、震えながら読み切る。","sentenceIds":["sample_finding_her_voice_s5","sample_finding_her_voice_s6","sample_finding_her_voice_s7","sample_finding_her_voice_s8"]},{"id":"sample_finding_her_voice_p3","index":2,"title":"拍手のない変化","summary":"劇的な出来事はないまま、座る場所が変わっていく。","sentenceIds":["sample_finding_her_voice_s9","sample_finding_her_voice_s10","sample_finding_her_voice_s11","sample_finding_her_voice_s12"]}],"sentences":[{"id":"sample_finding_her_voice_s1","index":0,"en":"Mina had spent three years in the back row, and she liked it there.","ja":"ミナは三年間、教室のいちばん後ろの席で過ごしてきた。そして、その場所が気に入っていた。","partId":"sample_finding_her_voice_p1"},{"id":"sample_finding_her_voice_s2","index":1,"en":"From the back, you could see everything without being seen.","ja":"後ろからなら、自分は見られずにすべてを見ていられる。","partId":"sample_finding_her_voice_p1"},{"id":"sample_finding_her_voice_s3","index":2,"en":"When her teacher asked for volunteers to read the morning announcements, Mina looked down at her desk.","ja":"先生が朝の放送を読む人はいないかと聞いたとき、ミナは机に目を落とした。","partId":"sample_finding_her_voice_p1"},{"id":"sample_finding_her_voice_s4","index":3,"en":"She had always believed her voice was too small to matter.","ja":"自分の声なんて小さすぎて意味がない、とずっと思っていたのだ。","partId":"sample_finding_her_voice_p1"},{"id":"sample_finding_her_voice_s5","index":4,"en":"Then, one Tuesday in October, the usual announcer caught a cold.","ja":"ところが十月のある火曜日、いつものアナウンサー役が風邪をひいた。","partId":"sample_finding_her_voice_p2"},{"id":"sample_finding_her_voice_s6","index":5,"en":"The teacher handed Mina the script without asking, as if the matter had already been settled.","ja":"先生は何も聞かずにミナへ原稿を渡した。もう決まったことだとでもいうように。","partId":"sample_finding_her_voice_p2"},{"id":"sample_finding_her_voice_s7","index":6,"en":"Her hands shook so badly that the paper rattled against the microphone.","ja":"手がひどく震えて、紙がマイクに当たってかさかさと鳴った。","partId":"sample_finding_her_voice_p2"},{"id":"sample_finding_her_voice_s8","index":7,"en":"She read the first line, then the second, and somewhere near the bottom of the page she forgot to be afraid.","ja":"一行目を読み、二行目を読み、ページの終わりに近づいたどこかで、怖がることを忘れていた。","partId":"sample_finding_her_voice_p2"},{"id":"sample_finding_her_voice_s9","index":8,"en":"Nobody applauded, because that is not what happens after morning announcements.","ja":"拍手は起きなかった。朝の放送のあとに拍手が起きることなどないからだ。","partId":"sample_finding_her_voice_p3"},{"id":"sample_finding_her_voice_s10","index":9,"en":"But a boy she had never spoken to said her voice was easy to listen to.","ja":"けれど、話したこともない男子が、ミナの声は聞きやすいと言った。","partId":"sample_finding_her_voice_p3"},{"id":"sample_finding_her_voice_s11","index":10,"en":"Mina thought about that sentence for the rest of the week.","ja":"ミナはその一言を、その週のあいだずっと考えていた。","partId":"sample_finding_her_voice_p3"},{"id":"sample_finding_her_voice_s12","index":11,"en":"By November she had stopped sitting in the back row, not because she had become brave, but because she had run out of reasons to hide.","ja":"十一月になるころ、ミナは後ろの席に座るのをやめていた。勇敢になったからではない。隠れている理由がなくなったからだった。","partId":"sample_finding_her_voice_p3"}],"vocab":[{"id":"sample_finding_her_voice_v1","word":"the back row","phonetic":"","pos":"熟語","meaning":"（教室の）いちばん後ろの列","example":"Mina had spent three years in the back row, and she liked it there.","exampleJa":"ミナは三年間、教室のいちばん後ろの席で過ごしてきた。そして、その場所が気に入っていた。","sentenceId":"sample_finding_her_voice_s1"},{"id":"sample_finding_her_voice_v2","word":"volunteers","phonetic":"/ˌvɑːlənˈtɪrz/","pos":"名詞","meaning":"自分から引き受ける人、志願者","example":"When her teacher asked for volunteers to read the morning announcements, Mina looked down at her desk.","exampleJa":"先生が朝の放送を読む人はいないかと聞いたとき、ミナは机に目を落とした。","sentenceId":"sample_finding_her_voice_s3"},{"id":"sample_finding_her_voice_v3","word":"announcements","phonetic":"/əˈnaʊnsmənts/","pos":"名詞","meaning":"お知らせ、連絡事項","example":"When her teacher asked for volunteers to read the morning announcements, Mina looked down at her desk.","exampleJa":"先生が朝の放送を読む人はいないかと聞いたとき、ミナは机に目を落とした。","sentenceId":"sample_finding_her_voice_s3"},{"id":"sample_finding_her_voice_v4","word":"matter","phonetic":"/ˈmætər/","pos":"動詞","meaning":"重要である、意味がある","example":"She had always believed her voice was too small to matter.","exampleJa":"自分の声なんて小さすぎて意味がない、とずっと思っていたのだ。","sentenceId":"sample_finding_her_voice_s4"},{"id":"sample_finding_her_voice_v5","word":"as if","phonetic":"","pos":"熟語","meaning":"まるで〜であるかのように","example":"The teacher handed Mina the script without asking, as if the matter had already been settled.","exampleJa":"先生は何も聞かずにミナへ原稿を渡した。もう決まったことだとでもいうように。","sentenceId":"sample_finding_her_voice_s6"},{"id":"sample_finding_her_voice_v6","word":"settled","phonetic":"/ˈsetld/","pos":"動詞","meaning":"決着がついた、片づいた","example":"The teacher handed Mina the script without asking, as if the matter had already been settled.","exampleJa":"先生は何も聞かずにミナへ原稿を渡した。もう決まったことだとでもいうように。","sentenceId":"sample_finding_her_voice_s6"},{"id":"sample_finding_her_voice_v7","word":"rattled","phonetic":"/ˈrætld/","pos":"動詞","meaning":"かたかたと音を立てた","example":"Her hands shook so badly that the paper rattled against the microphone.","exampleJa":"手がひどく震えて、紙がマイクに当たってかさかさと鳴った。","sentenceId":"sample_finding_her_voice_s7"},{"id":"sample_finding_her_voice_v8","word":"applauded","phonetic":"/əˈplɔːdɪd/","pos":"動詞","meaning":"拍手した","example":"Nobody applauded, because that is not what happens after morning announcements.","exampleJa":"拍手は起きなかった。朝の放送のあとに拍手が起きることなどないからだ。","sentenceId":"sample_finding_her_voice_s9"},{"id":"sample_finding_her_voice_v9","word":"easy to listen to","phonetic":"","pos":"熟語","meaning":"聞きやすい（to 不定詞が easy を説明する形）","example":"But a boy she had never spoken to said her voice was easy to listen to.","exampleJa":"けれど、話したこともない男子が、ミナの声は聞きやすいと言った。","sentenceId":"sample_finding_her_voice_s10"},{"id":"sample_finding_her_voice_v10","word":"run out of","phonetic":"","pos":"熟語","meaning":"〜を使い果たす、〜がなくなる","example":"By November she had stopped sitting in the back row, not because she had become brave, but because she had run out of reasons to hide.","exampleJa":"十一月になるころ、ミナは後ろの席に座るのをやめていた。勇敢になったからではない。隠れている理由がなくなったからだった。","sentenceId":"sample_finding_her_voice_s12"}],"aiGenerated":true,"daysAgo":4},{"id":"sample_words_that_wouldnt_come","title":"The Words That Wouldn't Come","titleJa":"出てこなかった言葉","summary":"留学一週目、頭の中にある英語が口から出てこないケンタの話。異文化のなかで、正しさより伝えることを優先できるようになるまで。英検2級前後の語彙。","level":"eiken2","tags":["留学","異文化","コミュニケーション"],"wordCount":162,"source":"sample","parts":[{"id":"sample_words_that_wouldnt_come_p1","index":0,"title":"勉強と現実のずれ","summary":"文法は分かるのに、最初の会話でつまずく。","sentenceIds":["sample_words_that_wouldnt_come_s1","sample_words_that_wouldnt_come_s2","sample_words_that_wouldnt_come_s3","sample_words_that_wouldnt_come_s4"]},{"id":"sample_words_that_wouldnt_come_p2","index":1,"title":"完璧さという足かせ","summary":"頭で組み立てているうちに会話が過ぎていく。","sentenceIds":["sample_words_that_wouldnt_come_s5","sample_words_that_wouldnt_come_s6","sample_words_that_wouldnt_come_s7"]},{"id":"sample_words_that_wouldnt_come_p3","index":2,"title":"通じた瞬間","summary":"不完全な英語が初めてまっすぐ伝わる。","sentenceIds":["sample_words_that_wouldnt_come_s8","sample_words_that_wouldnt_come_s9","sample_words_that_wouldnt_come_s10","sample_words_that_wouldnt_come_s11","sample_words_that_wouldnt_come_s12"]}],"sentences":[{"id":"sample_words_that_wouldnt_come_s1","index":0,"en":"Kenta had studied English for six years, and he could explain the present perfect better than most of his classmates.","ja":"ケンタは六年間英語を勉強してきたし、現在完了の説明ならクラスの誰よりうまくできた。","partId":"sample_words_that_wouldnt_come_p1"},{"id":"sample_words_that_wouldnt_come_s2","index":1,"en":"On his first morning in Portland, none of that helped.","ja":"けれどポートランドでの最初の朝、そのどれも役に立たなかった。","partId":"sample_words_that_wouldnt_come_p1"},{"id":"sample_words_that_wouldnt_come_s3","index":2,"en":"His host mother asked a simple question, and he heard every word except the one that mattered.","ja":"ホストマザーが簡単な質問をしたが、肝心の一語だけが聞き取れなかった。","partId":"sample_words_that_wouldnt_come_p1"},{"id":"sample_words_that_wouldnt_come_s4","index":3,"en":"He smiled and said yes, which turned out to be the wrong answer.","ja":"彼はほほえんで「はい」と答えた。それが間違った答えだった。","partId":"sample_words_that_wouldnt_come_p1"},{"id":"sample_words_that_wouldnt_come_s5","index":4,"en":"For the next three days, Kenta rehearsed sentences in his head before saying them out loud.","ja":"それから三日間、ケンタは口に出す前に頭の中で文を組み立てるようになった。","partId":"sample_words_that_wouldnt_come_p2"},{"id":"sample_words_that_wouldnt_come_s6","index":5,"en":"By the time each sentence was perfect, the conversation had already moved on.","ja":"文が完璧になるころには、会話はとっくに先へ進んでいた。","partId":"sample_words_that_wouldnt_come_p2"},{"id":"sample_words_that_wouldnt_come_s7","index":6,"en":"He began to suspect that accuracy was costing him more than mistakes ever would.","ja":"正確さのために払っている代償のほうが、間違いよりずっと大きいのではないか。そう疑いはじめた。","partId":"sample_words_that_wouldnt_come_p2"},{"id":"sample_words_that_wouldnt_come_s8","index":7,"en":"On Friday, his host brother spilled juice across the kitchen table.","ja":"金曜日、ホストブラザーがキッチンのテーブルにジュースをこぼした。","partId":"sample_words_that_wouldnt_come_p3"},{"id":"sample_words_that_wouldnt_come_s9","index":8,"en":"Without thinking, Kenta shouted, \"Towel! There, behind you!\"","ja":"考える間もなく、ケンタは叫んでいた。「タオル! そこ、後ろ!」","partId":"sample_words_that_wouldnt_come_p3"},{"id":"sample_words_that_wouldnt_come_s10","index":9,"en":"It was not a complete sentence, and he did not care.","ja":"完全な文ではなかったが、そんなことはどうでもよかった。","partId":"sample_words_that_wouldnt_come_p3"},{"id":"sample_words_that_wouldnt_come_s11","index":10,"en":"For the first time that week, someone had understood him immediately.","ja":"その週で初めて、誰かが即座に自分の言葉を理解してくれたのだ。","partId":"sample_words_that_wouldnt_come_p3"},{"id":"sample_words_that_wouldnt_come_s12","index":11,"en":"Language, he realized, was not a test he had to pass but a road he had to cross.","ja":"言葉とは、合格しなければならない試験ではなく、渡らなければならない道なのだ。ケンタはそう気づいた。","partId":"sample_words_that_wouldnt_come_p3"}],"vocab":[{"id":"sample_words_that_wouldnt_come_v1","word":"the present perfect","phonetic":"","pos":"名詞","meaning":"現在完了（時制の名前）","example":"Kenta had studied English for six years, and he could explain the present perfect better than most of his classmates.","exampleJa":"ケンタは六年間英語を勉強してきたし、現在完了の説明ならクラスの誰よりうまくできた。","sentenceId":"sample_words_that_wouldnt_come_s1"},{"id":"sample_words_that_wouldnt_come_v2","word":"host mother","phonetic":"","pos":"名詞","meaning":"ホームステイ先の母親","example":"His host mother asked a simple question, and he heard every word except the one that mattered.","exampleJa":"ホストマザーが簡単な質問をしたが、肝心の一語だけが聞き取れなかった。","sentenceId":"sample_words_that_wouldnt_come_s3"},{"id":"sample_words_that_wouldnt_come_v3","word":"the one that mattered","phonetic":"","pos":"熟語","meaning":"肝心なもの（the one = the word）","example":"His host mother asked a simple question, and he heard every word except the one that mattered.","exampleJa":"ホストマザーが簡単な質問をしたが、肝心の一語だけが聞き取れなかった。","sentenceId":"sample_words_that_wouldnt_come_s3"},{"id":"sample_words_that_wouldnt_come_v4","word":"turned out to be","phonetic":"","pos":"熟語","meaning":"結局〜だと分かった","example":"He smiled and said yes, which turned out to be the wrong answer.","exampleJa":"彼はほほえんで「はい」と答えた。それが間違った答えだった。","sentenceId":"sample_words_that_wouldnt_come_s4"},{"id":"sample_words_that_wouldnt_come_v5","word":"rehearsed","phonetic":"/rɪˈhɜːrst/","pos":"動詞","meaning":"（前もって）練習した、頭の中で繰り返した","example":"For the next three days, Kenta rehearsed sentences in his head before saying them out loud.","exampleJa":"それから三日間、ケンタは口に出す前に頭の中で文を組み立てるようになった。","sentenceId":"sample_words_that_wouldnt_come_s5"},{"id":"sample_words_that_wouldnt_come_v6","word":"out loud","phonetic":"","pos":"熟語","meaning":"声に出して","example":"For the next three days, Kenta rehearsed sentences in his head before saying them out loud.","exampleJa":"それから三日間、ケンタは口に出す前に頭の中で文を組み立てるようになった。","sentenceId":"sample_words_that_wouldnt_come_s5"},{"id":"sample_words_that_wouldnt_come_v7","word":"moved on","phonetic":"","pos":"熟語","meaning":"次へ進んだ","example":"By the time each sentence was perfect, the conversation had already moved on.","exampleJa":"文が完璧になるころには、会話はとっくに先へ進んでいた。","sentenceId":"sample_words_that_wouldnt_come_s6"},{"id":"sample_words_that_wouldnt_come_v8","word":"suspect","phonetic":"/səˈspekt/","pos":"動詞","meaning":"〜ではないかと思う","example":"He began to suspect that accuracy was costing him more than mistakes ever would.","exampleJa":"正確さのために払っている代償のほうが、間違いよりずっと大きいのではないか。そう疑いはじめた。","sentenceId":"sample_words_that_wouldnt_come_s7"},{"id":"sample_words_that_wouldnt_come_v9","word":"accuracy","phonetic":"/ˈækjərəsi/","pos":"名詞","meaning":"正確さ","example":"He began to suspect that accuracy was costing him more than mistakes ever would.","exampleJa":"正確さのために払っている代償のほうが、間違いよりずっと大きいのではないか。そう疑いはじめた。","sentenceId":"sample_words_that_wouldnt_come_s7"},{"id":"sample_words_that_wouldnt_come_v10","word":"spilled","phonetic":"/spɪld/","pos":"動詞","meaning":"こぼした","example":"On Friday, his host brother spilled juice across the kitchen table.","exampleJa":"金曜日、ホストブラザーがキッチンのテーブルにジュースをこぼした。","sentenceId":"sample_words_that_wouldnt_come_s8"},{"id":"sample_words_that_wouldnt_come_v11","word":"immediately","phonetic":"/ɪˈmiːdiətli/","pos":"副詞","meaning":"すぐに、即座に","example":"For the first time that week, someone had understood him immediately.","exampleJa":"その週で初めて、誰かが即座に自分の言葉を理解してくれたのだ。","sentenceId":"sample_words_that_wouldnt_come_s11"}],"aiGenerated":true,"daysAgo":9},{"id":"sample_rocky_start","title":"A Rocky Start, A Steady Landing","titleJa":"出だしはつまずき、着地は静かに","summary":"納期が遅れかけたプロジェクトを、報告の仕方を変えることで立て直したチームの話。会議・メール・進捗報告など、TOEIC で頻出のビジネス表現を含む。","level":"toeic","tags":["ビジネス","プロジェクト管理","会議"],"wordCount":158,"source":"sample","parts":[{"id":"sample_rocky_start_p1","index":0,"title":"誰も言わなかった遅れ","summary":"個別には順調、全体では遅延という状態。","sentenceIds":["sample_rocky_start_s1","sample_rocky_start_s2","sample_rocky_start_s3"]},{"id":"sample_rocky_start_p2","index":1,"title":"質問を変える","summary":"「予定どおりか」から「何を待っているか」へ。","sentenceIds":["sample_rocky_start_s4","sample_rocky_start_s5","sample_rocky_start_s6","sample_rocky_start_s7"]},{"id":"sample_rocky_start_p3","index":2,"title":"取り戻せなかった二週間","summary":"遅れは残したまま、信頼できる進行に切り替える。","sentenceIds":["sample_rocky_start_s8","sample_rocky_start_s9","sample_rocky_start_s10","sample_rocky_start_s11"]}],"sentences":[{"id":"sample_rocky_start_s1","index":0,"en":"The project was two weeks behind schedule before anyone said so out loud.","ja":"誰かが口に出すより前に、そのプロジェクトは二週間遅れていた。","partId":"sample_rocky_start_p1"},{"id":"sample_rocky_start_s2","index":1,"en":"Each team reported that its own part was on track, which was technically true and completely useless.","ja":"どのチームも自分の担当は予定どおりだと報告した。厳密には本当で、まったく役に立たない報告だった。","partId":"sample_rocky_start_p1"},{"id":"sample_rocky_start_s3","index":2,"en":"The delays were hiding in the gaps between the teams.","ja":"遅れはチームとチームのすき間に隠れていたのだ。","partId":"sample_rocky_start_p1"},{"id":"sample_rocky_start_s4","index":3,"en":"At the Monday meeting, the project manager changed one question.","ja":"月曜の会議で、プロジェクトマネージャーは質問をひとつ変えた。","partId":"sample_rocky_start_p2"},{"id":"sample_rocky_start_s5","index":4,"en":"Instead of asking whether each team was on schedule, she asked what each team was waiting for.","ja":"各チームが予定どおりかを聞く代わりに、各チームが何を待っているのかを聞いたのだ。","partId":"sample_rocky_start_p2"},{"id":"sample_rocky_start_s6","index":5,"en":"The room went quiet, and then three people answered at once.","ja":"部屋は静まり返り、それから三人が同時に答えた。","partId":"sample_rocky_start_p2"},{"id":"sample_rocky_start_s7","index":6,"en":"Within twenty minutes, the team had found four dependencies that no one had recorded anywhere.","ja":"二十分もしないうちに、どこにも記録されていなかった依存関係が四つ見つかった。","partId":"sample_rocky_start_p2"},{"id":"sample_rocky_start_s8","index":7,"en":"They did not make up the two weeks, and the client was told so directly.","ja":"二週間の遅れを取り戻すことはできなかったし、その旨は顧客にもはっきり伝えられた。","partId":"sample_rocky_start_p3"},{"id":"sample_rocky_start_s9","index":8,"en":"What they did was deliver the remaining work without a single further surprise.","ja":"彼らがやったのは、残りの作業を、もう一度も不意打ちを出さずに仕上げることだった。","partId":"sample_rocky_start_p3"},{"id":"sample_rocky_start_s10","index":9,"en":"In the review, the client said the revised timeline had been easier to work with than the original one.","ja":"振り返りの場で顧客は、修正後のスケジュールのほうが当初のものより扱いやすかったと述べた。","partId":"sample_rocky_start_p3"},{"id":"sample_rocky_start_s11","index":10,"en":"A schedule you can trust, it turns out, is worth more than a schedule you can brag about.","ja":"信用できるスケジュールは、自慢できるスケジュールより価値がある。結局はそういうことだった。","partId":"sample_rocky_start_p3"}],"vocab":[{"id":"sample_rocky_start_v1","word":"behind schedule","phonetic":"","pos":"熟語","meaning":"予定より遅れて","example":"The project was two weeks behind schedule before anyone said so out loud.","exampleJa":"誰かが口に出すより前に、そのプロジェクトは二週間遅れていた。","sentenceId":"sample_rocky_start_s1"},{"id":"sample_rocky_start_v2","word":"on track","phonetic":"","pos":"熟語","meaning":"順調に進んで","example":"Each team reported that its own part was on track, which was technically true and completely useless.","exampleJa":"どのチームも自分の担当は予定どおりだと報告した。厳密には本当で、まったく役に立たない報告だった。","sentenceId":"sample_rocky_start_s2"},{"id":"sample_rocky_start_v3","word":"technically","phonetic":"/ˈteknɪkli/","pos":"副詞","meaning":"厳密にいえば（形式的にはそのとおりだが、の含み）","example":"Each team reported that its own part was on track, which was technically true and completely useless.","exampleJa":"どのチームも自分の担当は予定どおりだと報告した。厳密には本当で、まったく役に立たない報告だった。","sentenceId":"sample_rocky_start_s2"},{"id":"sample_rocky_start_v4","word":"delays","phonetic":"/dɪˈleɪz/","pos":"名詞","meaning":"遅れ","example":"The delays were hiding in the gaps between the teams.","exampleJa":"遅れはチームとチームのすき間に隠れていたのだ。","sentenceId":"sample_rocky_start_s3"},{"id":"sample_rocky_start_v5","word":"dependencies","phonetic":"/dɪˈpendənsiz/","pos":"名詞","meaning":"（他の作業への）依存関係","example":"Within twenty minutes, the team had found four dependencies that no one had recorded anywhere.","exampleJa":"二十分もしないうちに、どこにも記録されていなかった依存関係が四つ見つかった。","sentenceId":"sample_rocky_start_s7"},{"id":"sample_rocky_start_v6","word":"make up","phonetic":"","pos":"熟語","meaning":"（遅れなどを）取り戻す","example":"They did not make up the two weeks, and the client was told so directly.","exampleJa":"二週間の遅れを取り戻すことはできなかったし、その旨は顧客にもはっきり伝えられた。","sentenceId":"sample_rocky_start_s8"},{"id":"sample_rocky_start_v7","word":"deliver","phonetic":"/dɪˈlɪvər/","pos":"動詞","meaning":"（成果物を）出す、納める","example":"What they did was deliver the remaining work without a single further surprise.","exampleJa":"彼らがやったのは、残りの作業を、もう一度も不意打ちを出さずに仕上げることだった。","sentenceId":"sample_rocky_start_s9"},{"id":"sample_rocky_start_v8","word":"revised","phonetic":"/rɪˈvaɪzd/","pos":"形容詞","meaning":"修正された","example":"In the review, the client said the revised timeline had been easier to work with than the original one.","exampleJa":"振り返りの場で顧客は、修正後のスケジュールのほうが当初のものより扱いやすかったと述べた。","sentenceId":"sample_rocky_start_s10"},{"id":"sample_rocky_start_v9","word":"timeline","phonetic":"/ˈtaɪmlaɪn/","pos":"名詞","meaning":"日程、スケジュール","example":"In the review, the client said the revised timeline had been easier to work with than the original one.","exampleJa":"振り返りの場で顧客は、修正後のスケジュールのほうが当初のものより扱いやすかったと述べた。","sentenceId":"sample_rocky_start_s10"},{"id":"sample_rocky_start_v10","word":"brag about","phonetic":"","pos":"熟語","meaning":"〜を自慢する","example":"A schedule you can trust, it turns out, is worth more than a schedule you can brag about.","exampleJa":"信用できるスケジュールは、自慢できるスケジュールより価値がある。結局はそういうことだった。","sentenceId":"sample_rocky_start_s11"}],"aiGenerated":true,"daysAgo":16},{"id":"sample_sugar_pill","title":"The Sugar Pill","titleJa":"砂糖の錠剤","summary":"プラセボ効果をめぐる研究の入門。実験デザイン、対照群、期待という変数を扱う説明文で、TOEFL のリーディングに近い密度と抽象度。","level":"toefl","tags":["科学","医学","研究手法"],"wordCount":190,"source":"sample","parts":[{"id":"sample_sugar_pill_p1","index":0,"title":"対照群という仕組み","summary":"薬の効果と「治療を受けている」効果を分けるための設計。","sentenceIds":["sample_sugar_pill_s1","sample_sugar_pill_s2","sample_sugar_pill_s3"]},{"id":"sample_sugar_pill_p2","index":1,"title":"期待という変数","summary":"プラセボが実際に効く、その測定可能な裏づけ。","sentenceIds":["sample_sugar_pill_s4","sample_sugar_pill_s5","sample_sugar_pill_s6","sample_sugar_pill_s7"]},{"id":"sample_sugar_pill_p3","index":2,"title":"二重盲検が要る理由","summary":"期待が結論を先取りしないようにするための手続き。","sentenceIds":["sample_sugar_pill_s8","sample_sugar_pill_s9","sample_sugar_pill_s10","sample_sugar_pill_s11"]}],"sentences":[{"id":"sample_sugar_pill_s1","index":0,"en":"In a clinical trial, some participants receive the drug being tested and others receive a pill with no active ingredient at all.","ja":"臨床試験では、一部の参加者は試験対象の薬を、それ以外の参加者は有効成分をいっさい含まない錠剤を受け取る。","partId":"sample_sugar_pill_p1"},{"id":"sample_sugar_pill_s2","index":1,"en":"The second group exists so that researchers can separate the effect of the drug from the effect of being treated.","ja":"後者の群が置かれるのは、薬そのものの効果と、治療を受けているという事実の効果とを、研究者が切り分けられるようにするためだ。","partId":"sample_sugar_pill_p1"},{"id":"sample_sugar_pill_s3","index":2,"en":"What complicates the picture is that the inactive pill frequently works.","ja":"話をややこしくしているのは、その不活性な錠剤がしばしば効いてしまうという点である。","partId":"sample_sugar_pill_p1"},{"id":"sample_sugar_pill_s4","index":3,"en":"Patients given a placebo have reported reduced pain, improved sleep, and steadier moods.","ja":"プラセボを与えられた患者が、痛みの軽減、睡眠の改善、気分の安定を報告してきた。","partId":"sample_sugar_pill_p2"},{"id":"sample_sugar_pill_s5","index":4,"en":"These reports are not simply imagined, since measurable changes in brain activity accompany them.","ja":"こうした報告は単なる思い込みではない。脳活動の測定可能な変化が伴っているからだ。","partId":"sample_sugar_pill_p2"},{"id":"sample_sugar_pill_s6","index":5,"en":"Expectation, it appears, is itself a biological event.","ja":"期待というものは、それ自体が生物学的な出来事であるらしい。","partId":"sample_sugar_pill_p2"},{"id":"sample_sugar_pill_s7","index":6,"en":"The size of the effect depends on factors that have nothing to do with chemistry, such as the color of the pill and the confidence of the doctor who hands it over.","ja":"その効果の大きさは、化学とは何の関係もない要因に左右される。錠剤の色や、それを手渡す医師の自信の度合いといったものに。","partId":"sample_sugar_pill_p2"},{"id":"sample_sugar_pill_s8","index":7,"en":"This poses a practical problem for anyone designing a study.","ja":"このことは、研究を設計する者にとって現実的な問題を突きつける。","partId":"sample_sugar_pill_p3"},{"id":"sample_sugar_pill_s9","index":8,"en":"If both groups improve, the drug must outperform the placebo by a margin large enough to rule out chance.","ja":"両方の群が改善した場合、その薬は偶然では説明できないだけの差をつけてプラセボを上回らなければならない。","partId":"sample_sugar_pill_p3"},{"id":"sample_sugar_pill_s10","index":9,"en":"For this reason, neither the patients nor the researchers are told who received which pill until the trial has ended.","ja":"そのため、試験が終わるまで、どちらの錠剤を誰が受け取ったのかは患者にも研究者にも知らされない。","partId":"sample_sugar_pill_p3"},{"id":"sample_sugar_pill_s11","index":10,"en":"The design is not a formality; it is the only way to keep expectation from quietly answering the question for us.","ja":"この設計は形式ではない。期待が私たちに代わって静かに答えを出してしまうのを防ぐ、唯一の方法なのだ。","partId":"sample_sugar_pill_p3"}],"vocab":[{"id":"sample_sugar_pill_v1","word":"clinical trial","phonetic":"","pos":"名詞","meaning":"臨床試験","example":"In a clinical trial, some participants receive the drug being tested and others receive a pill with no active ingredient at all.","exampleJa":"臨床試験では、一部の参加者は試験対象の薬を、それ以外の参加者は有効成分をいっさい含まない錠剤を受け取る。","sentenceId":"sample_sugar_pill_s1"},{"id":"sample_sugar_pill_v2","word":"active ingredient","phonetic":"","pos":"名詞","meaning":"有効成分","example":"In a clinical trial, some participants receive the drug being tested and others receive a pill with no active ingredient at all.","exampleJa":"臨床試験では、一部の参加者は試験対象の薬を、それ以外の参加者は有効成分をいっさい含まない錠剤を受け取る。","sentenceId":"sample_sugar_pill_s1"},{"id":"sample_sugar_pill_v3","word":"separate A from B","phonetic":"","pos":"熟語","meaning":"A を B から切り分ける","example":"The second group exists so that researchers can separate the effect of the drug from the effect of being treated.","exampleJa":"後者の群が置かれるのは、薬そのものの効果と、治療を受けているという事実の効果とを、研究者が切り分けられるようにするためだ。","sentenceId":"sample_sugar_pill_s2"},{"id":"sample_sugar_pill_v4","word":"complicates","phonetic":"/ˈkɑːmplɪkeɪts/","pos":"動詞","meaning":"複雑にする","example":"What complicates the picture is that the inactive pill frequently works.","exampleJa":"話をややこしくしているのは、その不活性な錠剤がしばしば効いてしまうという点である。","sentenceId":"sample_sugar_pill_s3"},{"id":"sample_sugar_pill_v5","word":"placebo","phonetic":"/pləˈsiːboʊ/","pos":"名詞","meaning":"プラセボ、偽薬","example":"Patients given a placebo have reported reduced pain, improved sleep, and steadier moods.","exampleJa":"プラセボを与えられた患者が、痛みの軽減、睡眠の改善、気分の安定を報告してきた。","sentenceId":"sample_sugar_pill_s4"},{"id":"sample_sugar_pill_v6","word":"measurable","phonetic":"/ˈmeʒərəbl/","pos":"形容詞","meaning":"測定できる","example":"These reports are not simply imagined, since measurable changes in brain activity accompany them.","exampleJa":"こうした報告は単なる思い込みではない。脳活動の測定可能な変化が伴っているからだ。","sentenceId":"sample_sugar_pill_s5"},{"id":"sample_sugar_pill_v7","word":"accompany","phonetic":"/əˈkʌmpəni/","pos":"動詞","meaning":"〜に伴う","example":"These reports are not simply imagined, since measurable changes in brain activity accompany them.","exampleJa":"こうした報告は単なる思い込みではない。脳活動の測定可能な変化が伴っているからだ。","sentenceId":"sample_sugar_pill_s5"},{"id":"sample_sugar_pill_v8","word":"expectation","phonetic":"/ˌekspekˈteɪʃn/","pos":"名詞","meaning":"期待、予期","example":"Expectation, it appears, is itself a biological event.","exampleJa":"期待というものは、それ自体が生物学的な出来事であるらしい。","sentenceId":"sample_sugar_pill_s6"},{"id":"sample_sugar_pill_v9","word":"have nothing to do with","phonetic":"","pos":"熟語","meaning":"〜とは何の関係もない","example":"The size of the effect depends on factors that have nothing to do with chemistry, such as the color of the pill and the confidence of the doctor who hands it over.","exampleJa":"その効果の大きさは、化学とは何の関係もない要因に左右される。錠剤の色や、それを手渡す医師の自信の度合いといったものに。","sentenceId":"sample_sugar_pill_s7"},{"id":"sample_sugar_pill_v10","word":"poses a problem","phonetic":"","pos":"熟語","meaning":"問題を提起する、問題となる","example":"This poses a practical problem for anyone designing a study.","exampleJa":"このことは、研究を設計する者にとって現実的な問題を突きつける。","sentenceId":"sample_sugar_pill_s8"},{"id":"sample_sugar_pill_v11","word":"outperform","phonetic":"/ˌaʊtpərˈfɔːrm/","pos":"動詞","meaning":"〜を上回る成績を示す","example":"If both groups improve, the drug must outperform the placebo by a margin large enough to rule out chance.","exampleJa":"両方の群が改善した場合、その薬は偶然では説明できないだけの差をつけてプラセボを上回らなければならない。","sentenceId":"sample_sugar_pill_s9"},{"id":"sample_sugar_pill_v12","word":"rule out","phonetic":"","pos":"熟語","meaning":"〜を除外する、〜の可能性を排除する","example":"If both groups improve, the drug must outperform the placebo by a margin large enough to rule out chance.","exampleJa":"両方の群が改善した場合、その薬は偶然では説明できないだけの差をつけてプラセボを上回らなければならない。","sentenceId":"sample_sugar_pill_s9"},{"id":"sample_sugar_pill_v13","word":"formality","phonetic":"/fɔːrˈmæləti/","pos":"名詞","meaning":"形式上の手続き、形だけのもの","example":"The design is not a formality; it is the only way to keep expectation from quietly answering the question for us.","exampleJa":"この設計は形式ではない。期待が私たちに代わって静かに答えを出してしまうのを防ぐ、唯一の方法なのだ。","sentenceId":"sample_sugar_pill_s11"}],"aiGenerated":true,"daysAgo":25}];
+
+/* ============================================================
+   5. Claude に頼む部分
+   ページから claude.use("sample") で直接尋ねる。API キーは要らない。
+   使えないときは null が返るので、その場合は対訳なしの取り込みに落とす。
+   ============================================================ */
+let AI = null;          // 解決済みの sample 関数
+let aiState = "pending"; // pending | ready | off
+const aiWaiters = [];
+
+async function initAI(){
+  try {
+    AI = (typeof claude !== "undefined" && claude.use) ? await claude.use("sample") : null;
+  } catch(e){ AI = null; }
+  aiState = AI ? "ready" : "off";
+  aiWaiters.splice(0).forEach(fn => fn());
+  document.body.classList.toggle("ai-off", !AI);
+  if (currentView === "create") renderCreate();
+}
+
+function whenAIKnown(){
+  if (aiState !== "pending") return Promise.resolve(aiState);
+  return new Promise(res => aiWaiters.push(() => res(aiState)));
+}
+
+const META_SYSTEM = `あなたは日本人の英語学習者向けに音読・シャドーイング教材を作る編集者です。
+渡されるのは番号つきの英文です。英文そのものは絶対に書き換えず、番号の対応を厳密に守ってください。
+
+- パート分けは「話の展開が変わるところ」で区切ります。startSentence / endSentence は 1 から最後の文番号まで、重複も欠落もなく連続させてください。
+- 重要語は、その文脈での意味を書きます。辞書の第一義をそのまま写さないでください。10〜14 語ほど選びます。
+- level は語彙と構文の難しさから eiken3 / kyotsu / eiken2 / toeic / toefl のいずれかを選びます。
+- tags は日本語のジャンルタグを 2〜4 個。
+
+次の形の JSON だけを返してください（説明文やコードフェンスは付けない）:
+{"titleEn":"英語のタイトル","titleJa":"日本語のタイトル","summaryJa":"日本語で2〜3文の概要","level":"kyotsu","tags":["..."],"parts":[{"startSentence":1,"endSentence":4,"title":"日本語の見出し","summary":"1行の要約"}],"vocab":[{"word":"語または熟語","phonetic":"/発音記号/ または空文字","pos":"名詞/動詞/熟語など","meaning":"文脈に即した日本語語義","sentenceNumber":1}]}`;
+
+const TRANSLATE_SYSTEM = `あなたは日本人の英語学習者向けの対訳を作る翻訳者です。
+番号つきの英文が渡されます。1 文ずつ、対応する番号で日本語訳を返してください。
+
+- 直訳ではなく、日本語として自然に読める訳にします。ただし原文にない情報は足しません。
+- 1 文は 1 訳に対応させます。文を結合したり分割したりしないでください。
+- 会話文の口調（丁寧/くだけた）は原文に合わせます。
+- 渡された番号すべてに訳を返してください。
+
+次の形の JSON だけを返してください（説明文やコードフェンスは付けない）:
+{"translations":[{"n":1,"ja":"..."}]}`;
+
+const EXPLAIN_SYSTEM = `あなたは日本人の英語学習者に一対一で教える講師です。
+学習者が「ここが分からない」と印を付けた箇所について、その場で短く解説します。
+
+- 相手は日本語話者です。解説はすべて日本語で書きます。
+- つまずきの種類に合わせて答えます。
+  - 聞き取れない: 音のつながり（リエゾン）・脱落・弱形・リズムを、実際にどう聞こえるかで説明する。
+  - 単語がわからない: その文脈での意味、語源やコアイメージ、紛らわしい語との違い。
+  - 文法・構文がわからない: 文の骨格（S/V/O）を示し、どの語がどこに掛かるかを説明する。
+- 文法用語を使うときは一度かみ砕きます。
+- 分かった気にさせるだけの当たり障りのない説明は避け、その文の具体に踏み込んでください。
+
+次の形の JSON だけを返してください（説明文やコードフェンスは付けない）:
+{"headline":"一言でいうと（30字以内）","explanation":"本文の解説（200〜400字）","keyPoints":["覚えておくポイント","..."],"relatedExample":"同じ型の英語例文","relatedExampleJa":"その訳"}`;
+
+function numbered(list){ return list.map(x => x.n + ". " + x.en).join("\n"); }
+
+/** sample.json を呼んで、失敗時は日本語のメッセージに変える。 */
+async function ask(system, user, tier){
+  if (!AI) throw new Error("この画面では AI 機能が使えません。");
+  try {
+    const out = await AI.json(
+      [{ role:"user", content: system + "\n\n----\n\n" + user }],
+      { modelTier: tier || "default" }
+    );
+    if (!out || typeof out !== "object") throw new Error("shape");
+    return out;
+  } catch(e){
+    const code = e && e.code;
+    if (code === "not_granted") throw new Error("AI の利用が許可されませんでした。対訳なしで取り込むことはできます。");
+    if (code === "rate_limited") throw new Error("立て込んでいます。少し待ってからもう一度お試しください。");
+    if (code === "cancelled") throw new Error("中止しました。");
+    throw new Error("AI の返答を読み取れませんでした。もう一度お試しください。");
+  }
+}
+
+/** 英文を 1 冊の教材にする。meta と対訳を同時に走らせる。 */
+async function analyzeWithAI(text, onStep){
+  const seg = segment(text);
+  if (!seg.sentences.length) throw new Error("英文が見つかりませんでした。");
+
+  const numberedAll = seg.sentences.map((en,i) => ({ en, n:i+1 }));
+  const groups = chunkList(numberedAll, TRANSLATE_CHUNK);
+  onStep && onStep("meta", "run");
+  onStep && onStep("trans", "run");
+
+  const metaP = ask(META_SYSTEM,
+    "次の英文を解析してください。全 " + seg.sentences.length + " 文です。\n\n" + numbered(numberedAll),
+    "complex"
+  ).then(r => { onStep && onStep("meta","ok"); return r; });
+
+  let doneGroups = 0;
+  const transP = groups.map(g =>
+    ask(TRANSLATE_SYSTEM,
+      "次の " + g.length + " 文を訳してください。番号は本文全体の通し番号です。\n\n" + numbered(g),
+      "default"
+    ).then(r => {
+      doneGroups++;
+      onStep && onStep("trans", doneGroups >= groups.length ? "ok" : "run", doneGroups + "/" + groups.length);
+      return r;
+    })
+  );
+
+  const results = await Promise.all([metaP].concat(transP));
+  const meta = results[0] || {};
+  const translations = new Map();
+  for (let i=1;i<results.length;i++){
+    const list = (results[i] && results[i].translations) || [];
+    for (const t of list){
+      const n = Number(t.n);
+      if (n >= 1 && n <= seg.sentences.length && t.ja) translations.set(n, String(t.ja));
+    }
+  }
+  onStep && onStep("build","ok");
+
+  return buildMaterial({
+    text, source:"paste",
+    title: meta.titleEn, titleJa: meta.titleJa, summary: meta.summaryJa,
+    level: LEVEL_LABEL[meta.level] ? meta.level : "unknown",
+    tags: Array.isArray(meta.tags) ? meta.tags.slice(0,5) : [],
+    translations,
+    parts: Array.isArray(meta.parts) ? meta.parts : [],
+    vocab: Array.isArray(meta.vocab) ? meta.vocab : [],
+    aiGenerated: true
+  });
+}
+
+/** 対訳なしの取り込み。分割・パート・語数だけは AI なしでも出る。 */
+function analyzeOffline(text, notice){
+  return buildMaterial({
+    text, source:"paste", aiGenerated:false,
+    notice: notice || "対訳と語義なしの簡易教材として取り込みました。音読と弱点マークはこのまま使えます。"
+  });
+}
+
+/** 弱点マーク 1 件に解説を付ける。 */
+async function explainMark(mark, material){
+  const s = material ? material.sentences.find(x => x.id === mark.sentenceId) : null;
+  const before = s && s.index > 0 ? material.sentences[s.index-1].en : "";
+  const after  = s && material && s.index < material.sentences.length-1 ? material.sentences[s.index+1].en : "";
+  const focus = mark.selectedText.trim()
+    ? '学習者が選んだ箇所: "' + mark.selectedText.trim() + '"'
+    : "学習者は文全体に印を付けています。";
+  const user = "つまずきの種類: " + WEAKNESS_LABEL[mark.kind] + "\n\n"
+    + "対象の文: " + mark.sentenceEn + "\n"
+    + "その訳: " + (mark.sentenceJa || "(訳なし)") + "\n"
+    + focus + "\n\n"
+    + "前後の文:\n" + (before || "(なし)") + "\n" + (after || "(なし)");
+  const r = await ask(EXPLAIN_SYSTEM, user, "default");
+  return {
+    headline: String(r.headline || ""),
+    explanation: String(r.explanation || ""),
+    keyPoints: Array.isArray(r.keyPoints) ? r.keyPoints.map(String) : [],
+    relatedExample: String(r.relatedExample || ""),
+    relatedExampleJa: String(r.relatedExampleJa || "")
+  };
+}
+
+/* ============================================================
+   6. 画面の切り替え
+   ============================================================ */
+let currentView = "home";
+let currentMaterialId = "";
+const viewEl = () => $("#view");
+const playerSlot = () => $("#playerSlot");
+
+function go(view, arg){
+  // 画面を離れるときは必ず読み上げを止める
+  reader.stop();
+  currentView = view;
+  if (view === "study"){
+    currentMaterialId = arg || currentMaterialId;
+    studyTab = "text";       // 新しい教材はいつも本文から
+    revealed.clear();
+    selCache.clear();
+    openMenu = "";
+  }
+  playerSlot().innerHTML = "";
+  document.querySelectorAll("#nav button").forEach(b => {
+    if (b.dataset.go === view) b.setAttribute("aria-current","page");
+    else b.removeAttribute("aria-current");
+  });
+  window.scrollTo(0,0);
+  render();
+}
+function render(){
+  if (currentView === "home") renderHome();
+  else if (currentView === "create") renderCreate();
+  else if (currentView === "weakness") renderWeakness();
+  else if (currentView === "study") renderStudy();
+}
+
+/* ============================================================
+   7. 本棚
+   ============================================================ */
+function levelChip(level){
+  return '<span class="chip lvl">' + esc(LEVEL_LABEL[level] || LEVEL_LABEL.unknown) + "</span>";
+}
+function materialCard(m){
+  const pr = progressOf(m.id);
+  const read = pr.readSentenceIds.length;
+  const pct = m.sentences.length ? Math.round(read / m.sentences.length * 100) : 0;
+  const nMarks = marksOf(m.id).filter(k => !k.resolved).length;
+  return ''
+    + '<button type="button" class="mat" data-open="' + esc(m.id) + '">'
+    +   '<div class="row" style="gap:6px">' + levelChip(m.level)
+    +     (m.source === "sample" ? '<span class="chip">サンプル</span>' : "")
+    +     (m.aiGenerated ? "" : '<span class="chip">対訳なし</span>')
+    +   "</div>"
+    +   "<h3>" + esc(m.title) + "</h3>"
+    +   (m.titleJa ? '<div class="ja">' + esc(m.titleJa) + "</div>" : "")
+    +   (m.summary ? '<div class="sum">' + esc(m.summary) + "</div>" : "")
+    +   '<div class="bar"><i style="width:' + pct + '%"></i></div>'
+    +   "<footer>"
+    +     '<span class="num">' + read + "/" + m.sentences.length + " 文</span><span>·</span>"
+    +     '<span class="num">' + m.wordCount + " 語</span><span>·</span>"
+    +     "<span>" + esc(ago(m.createdAt)) + "</span>"
+    +     (nMarks ? '<span style="margin-left:auto;color:var(--marker)">弱点 ' + nMarks + "</span>" : "")
+    +   "</footer>"
+    + "</button>";
+}
+function renderHome(){
+  const list = DB.materials.slice().sort((a,b) => b.createdAt - a.createdAt);
+  const mine = list.filter(m => m.source !== "sample");
+  const samples = list.filter(m => m.source === "sample");
+  const totalRead = list.reduce((n,m) => n + progressOf(m.id).readSentenceIds.length, 0);
+  const totalMarks = DB.marks.filter(k => !k.resolved).length;
+
+  viewEl().innerHTML = ''
+    + '<section class="hero">'
+    +   '<p class="eyebrow">英文スクリプト → 音読ドリル</p>'
+    +   "<h1>読める英語を、<br>口から出る英語にする。</h1>"
+    +   '<p class="lede">英文を貼ると、1 文ずつの対訳・意味のかたまり・重要語に分解します。'
+    +     "あとは番号を押して音読するだけ。つまずいた箇所に印を付けておけば、その場で解説が付き、弱点ノートに溜まっていきます。</p>"
+    +   '<div class="row" style="margin-top:18px">'
+    +     '<button type="button" class="btn" data-go="create">英文を貼って教材にする</button>'
+    +     (samples[0] ? '<button type="button" class="btn ghost" data-open="' + esc(samples[0].id) + '">サンプルで試す</button>' : "")
+    +   "</div>"
+    +   '<div class="steps">'
+    +     '<div class="step"><span class="n">1</span><b>貼る</b><span class="d">記事・台本・教科書の英文をそのまま。</span></div>'
+    +     '<div class="step"><span class="n">2</span><b>分かれる</b><span class="d">文ごとの対訳とパート、重要語。</span></div>'
+    +     '<div class="step"><span class="n">3</span><b>音読する</b><span class="d">速さ・回数・範囲を決めて追いかける。</span></div>'
+    +     '<div class="step"><span class="n">4</span><b>印を付ける</b><span class="d">分からない箇所に 3 種類のタグ。</span></div>'
+    +     '<div class="step"><span class="n">5</span><b>溜める</b><span class="d">弱点ノートで種類ごとに見返す。</span></div>'
+    +   "</div>"
+    + "</section>"
+    + (totalRead || totalMarks
+        ? '<p class="tiny muted" style="margin:0 0 4px">これまでに音読 <b class="num">' + totalRead
+          + '</b> 文、未解決の弱点 <b class="num">' + totalMarks + "</b> 件。</p>"
+        : "")
+    + (mine.length
+        ? '<div class="sec-head"><h2>あなたの教材</h2><span class="tiny muted num">' + mine.length + " 冊</span></div>"
+          + '<div class="shelf">' + mine.map(materialCard).join("") + "</div>"
+        : "")
+    + '<div class="sec-head"><h2>サンプル教材</h2><span class="tiny muted">そのまま音読できます</span></div>'
+    + (samples.length
+        ? '<div class="shelf">' + samples.map(materialCard).join("") + "</div>"
+        : '<div class="empty">サンプルを消しました。<button type="button" class="btn sm ghost" id="reseed" style="margin-left:8px">戻す</button></div>')
+    + '<p class="tiny muted" style="margin-top:26px;line-height:1.8">'
+    +   "教材・進捗・弱点はこの端末のブラウザの中だけに保存されます。"
+    +   "読み上げはブラウザ内蔵の音声を使うので、通信も鍵も要りません。</p>";
+
+  const rs = $("#reseed");
+  if (rs) rs.onclick = () => { seedSamples(); renderHome(); };
+}
+
+/* ============================================================
+   8. 教材をつくる
+   ============================================================ */
+let createText = "";
+const STEP_LABEL = { meta:"パート分け・重要語・レベル判定", trans:"1 文ずつの対訳", build:"教材の組み立て" };
+let createSteps = {};
+let createBusy = false;
+let createError = "";
+
+function renderCreate(){
+  const seg = segment(createText);
+  const tooLong = createText.length > MAX_INPUT_CHARS;
+  const ready = seg.sentences.length > 0 && !tooLong;
+
+  viewEl().innerHTML = ''
+    + '<p class="eyebrow">教材をつくる</p>'
+    + "<h1 style=\"margin-bottom:10px\">英文を貼る</h1>"
+    + '<p class="lede" style="margin-bottom:18px">段落はそのままで構いません。英文は一字も書き換えず、対訳と注記だけを足します。</p>'
+    + '<textarea id="src" rows="11" placeholder="Paste an English script, article, or textbook passage here.&#10;&#10;段落は空行で区切ってください。"'
+    +   (createBusy ? " disabled" : "") + ">" + esc(createText) + "</textarea>"
+    + '<div class="row" style="margin-top:10px;justify-content:space-between">'
+    +   '<span class="tiny muted num">' + seg.sentences.length + " 文 / " + seg.wordCount + " 語 / "
+    +     createText.length + " 字" + (tooLong ? "（" + MAX_INPUT_CHARS + " 字まで）" : "") + "</span>"
+    +   '<span class="tiny muted">' + (aiState === "pending" ? "AI の確認中…"
+        : aiState === "ready" ? "AI で対訳を作れます" : "この画面では AI なしの取り込みだけできます") + "</span>"
+    + "</div>"
+    + '<div class="row" style="margin-top:14px">'
+    +   (aiState !== "off"
+        ? '<button type="button" class="btn" id="goAI"' + (ready && !createBusy && aiState === "ready" ? "" : " disabled") + ">"
+          + (createBusy ? '<span class="spin"></span> 作成中…' : "対訳つきの教材にする") + "</button>"
+        : "")
+    +   '<button type="button" class="btn ghost" id="goPlain"' + (ready && !createBusy ? "" : " disabled") + ">対訳なしで取り込む</button>"
+    + "</div>"
+    + (Object.keys(createSteps).length
+        ? '<div class="prog"><b>Claude に頼んでいます</b><ol>'
+          + ["meta","trans","build"].map(k => {
+              const st = createSteps[k];
+              const cls = st === "ok" ? "ok" : st === "run" ? "on" : "";
+              const mark = st === "ok" ? "✓ " : st === "run" ? "… " : "";
+              const extra = createSteps[k+"_note"] ? " (" + createSteps[k+"_note"] + ")" : "";
+              return '<li class="' + cls + '">' + mark + STEP_LABEL[k] + extra + "</li>";
+            }).join("") + "</ol></div>"
+        : "")
+    + (createError ? '<div class="err">' + esc(createError) + "</div>" : "")
+    + '<div class="note" style="margin-top:22px">'
+    +   "<b>写真から取り込む場合</b><br>教科書やプリントの写真は、端末の文字認識（iOS / Android のテキスト選択、Google レンズなど）でコピーしてここに貼ってください。"
+    + "</div>";
+
+  const ta = $("#src");
+  if (ta){
+    ta.oninput = () => {
+      createText = ta.value;
+      // 文字数表示だけ更新したいので、カーソルが飛ばないよう部分更新にする
+      const info = viewEl().querySelector(".row .tiny.num");
+      const s2 = segment(createText);
+      if (info) info.textContent = s2.sentences.length + " 文 / " + s2.wordCount + " 語 / " + createText.length + " 字"
+        + (createText.length > MAX_INPUT_CHARS ? "（" + MAX_INPUT_CHARS + " 字まで）" : "");
+      const ok = s2.sentences.length > 0 && createText.length <= MAX_INPUT_CHARS && !createBusy;
+      const a = $("#goAI"), b = $("#goPlain");
+      if (a) a.disabled = !(ok && aiState === "ready");
+      if (b) b.disabled = !ok;
+    };
+  }
+  const ai = $("#goAI");
+  if (ai) ai.onclick = runAI;
+  const plain = $("#goPlain");
+  if (plain) plain.onclick = () => {
+    const m = analyzeOffline(createText);
+    upsertMaterial(m); createText = ""; createSteps = {}; createError = "";
+    go("study", m.id);
+  };
+}
+
+async function runAI(){
+  createBusy = true; createError = ""; createSteps = { meta:"wait", trans:"wait", build:"wait" };
+  renderCreate();
+  try {
+    const m = await analyzeWithAI(createText, (k, st, note) => {
+      createSteps[k] = st;
+      if (note) createSteps[k+"_note"] = note;
+      if (currentView === "create") renderCreate();
+    });
+    upsertMaterial(m);
+    createBusy = false; createText = ""; createSteps = {};
+    go("study", m.id);
+  } catch(e){
+    createBusy = false;
+    createSteps = {};
+    createError = (e && e.message) || "教材を作れませんでした。";
+    renderCreate();
+  }
+}
+
+/* ============================================================
+   9. 音読プレイヤーの状態機械
+   再生のたびに token を進め、古い onEnd を無効にする。
+   設定はその場で読むので、再生中に変えても次の文から効く。
+   ============================================================ */
+const reader = {
+  token: 0, index: 0, playing: false, error: "",
+  sentences: [], range: [0,0],
+  onSentenceDone: null,
+
+  attach(sentences){
+    this.sentences = sentences;
+    this.index = 0;
+    this.range = [0, Math.max(0, sentences.length-1)];
+    this.error = "";
+  },
+  stop(){ this.token++; tts.cancel(); this.playing = false; paintReader(); },
+  playFrom(start){
+    this.token++;
+    const token = this.token;
+    this.error = "";
+    this.playing = true;
+    const self = this;
+
+    function run(i, repeatDone){
+      if (self.token !== token) return;
+      const s = self.sentences[i];
+      if (!s){ self.playing = false; paintReader(); return; }
+      self.index = i;
+      paintReader();
+      const st = settings();
+      tts.speak(s.en, {
+        rate: st.rate,
+        voiceURI: st.voiceURI || undefined,
+        onEnd(){
+          if (self.token !== token) return;
+          const c = settings();
+          const repeats = repeatDone + 1;
+          if (repeats >= c.repeat && self.onSentenceDone) self.onSentenceDone(s);
+          if (repeats < c.repeat){ run(i, repeats); return; }
+          if (!c.autoAdvance){ self.playing = false; paintReader(); return; }
+          const lo = self.range[0], hi = self.range[1];
+          const next = i + 1;
+          if (next > hi || next >= self.sentences.length){
+            if (c.loop){ run(Math.max(0, lo), 0); return; }
+            self.playing = false; paintReader(); return;
+          }
+          run(next, 0);
+        },
+        onError(reason){
+          if (self.token !== token) return;
+          self.playing = false;
+          self.error = reason;
+          paintReader();
+        }
+      });
+    }
+    run(start, 0);
+  },
+  toggle(){ if (this.playing) this.stop(); else this.playFrom(this.index); },
+  step(delta){
+    const next = clamp(this.index + delta, 0, Math.max(0, this.sentences.length-1));
+    if (this.playing) this.playFrom(next);
+    else { this.index = next; paintReader(); scrollToCurrent(); }
+  }
+};
+
+/* ============================================================
+   10. 学習画面
+   ============================================================ */
+let studyTab = "text";
+const revealed = new Set();      // 個別に「訳を見る」を押した文
+const selCache = new Map();      // 文 id → ドラッグで選んだ文字列
+let openMenu = "";
+
+function markChip(k){
+  return '<a class="chip k-' + k.kind + '" href="#mark-' + esc(k.id) + '" data-jump="' + esc(k.id) + '">'
+    + esc(WEAKNESS_SHORT[k.kind])
+    + (k.status === "loading" ? " …" : k.status === "done" ? " ✓" : "")
+    + "</a>";
+}
+function rowHTML(m, s, pr, marks){
+  const n = s.index + 1;
+  const isRead = pr.readSentenceIds.indexOf(s.id) >= 0;
+  const cur = reader.index === s.index;
+  const jaVisible = settings().showJa || revealed.has(s.id);
+  const mine = marks.filter(k => k.sentenceId === s.id);
+  return ''
+    + '<div class="sent' + (cur ? " cur" : "") + (isRead ? " done" : "") + '" id="sentence-' + esc(s.id) + '">'
+    +   '<button type="button" class="no num" data-play="' + esc(s.id) + '" title="この文から再生" aria-label="'
+    +     n + "文目から再生\">" + n + "</button>"
+    +   '<div class="body">'
+    +     '<p class="txt" data-txt="' + esc(s.id) + '">' + esc(s.en) + "</p>"
+    +     (s.ja
+        ? (jaVisible
+            ? '<p class="ja">' + esc(s.ja) + "</p>"
+            : '<button type="button" class="reveal" data-reveal="' + esc(s.id) + '">訳を見る</button>')
+        : "")
+    +     (mine.length ? '<div class="marks">' + mine.map(markChip).join("") + "</div>" : "")
+    +   "</div>"
+    +   '<div class="acts">'
+    +     '<button type="button" class="' + (isRead ? "read" : "") + '" data-read="' + esc(s.id) + '" aria-pressed="'
+    +       (isRead ? "true" : "false") + '" title="' + (isRead ? "音読チェックを外す" : "音読できた") + '">読めた</button>'
+    +     '<span class="menu">'
+    +       '<button type="button" data-menu="' + esc(s.id) + '" title="分からないところに印を付ける" aria-expanded="'
+    +         (openMenu === s.id ? "true" : "false") + '">？</button>'
+    +       (openMenu === s.id ? menuHTML(s) : "")
+    +     "</span>"
+    +   "</div>"
+    + "</div>";
+}
+function menuHTML(s){
+  const sel = selCache.get(s.id) || "";
+  return '<span class="pop">'
+    + "<p>" + (sel ? "「" + esc(truncate(sel,22)) + "」について" : "この文のどこが分からない？") + "</p>"
+    + KINDS.map(k => '<button type="button" data-mark="' + k + '" data-sid="' + esc(s.id) + '">'
+        + esc(WEAKNESS_LABEL[k]) + "</button>").join("")
+    + "</span>";
+}
+
+function renderStudy(){
+  const m = getMaterial(currentMaterialId);
+  if (!m){ go("home"); return; }
+  const pr = progressOf(m.id);
+  const marks = marksOf(m.id);
+  reader.attach(m.sentences);
+  reader.onSentenceDone = (s) => {
+    if (pr.readSentenceIds.indexOf(s.id) < 0){
+      pr.readSentenceIds.push(s.id);
+      save();
+      patchRow(m, s.id);
+    }
+  };
+
+  const read = pr.readSentenceIds.length;
+  const pct = m.sentences.length ? Math.round(read/m.sentences.length*100) : 0;
+  const unresolved = marks.filter(k => !k.resolved).length;
+
+  viewEl().innerHTML = ''
+    + '<button type="button" class="tiny muted" data-go="home" style="margin-bottom:12px">← 本棚</button>'
+    + '<div class="study-head">'
+    +   '<div class="row" style="gap:6px;margin-bottom:8px">' + levelChip(m.level)
+    +     m.tags.map(t => '<span class="chip">' + esc(t) + "</span>").join("")
+    +     (m.aiGenerated ? "" : '<span class="chip">対訳なし</span>')
+    +   "</div>"
+    +   "<h1>" + esc(m.title) + "</h1>"
+    +   (m.titleJa ? '<p class="muted" style="margin:4px 0 0">' + esc(m.titleJa) + "</p>" : "")
+    +   (m.summary ? '<p class="lede" style="margin:10px 0 0">' + esc(m.summary) + "</p>" : "")
+    + "</div>"
+    + (m.notice ? '<div class="note" style="margin-top:14px">' + esc(m.notice) + "</div>" : "")
+    + '<div class="row" style="margin-top:16px;gap:10px">'
+    +   '<div class="bar" style="flex:1;min-width:120px"><i style="width:' + pct + '%"></i></div>'
+    +   '<span class="tiny muted num">音読 ' + read + "/" + m.sentences.length + "</span>"
+    +   '<label class="tiny muted" style="display:inline-flex;align-items:center;gap:5px;white-space:nowrap">'
+    +     '<input type="checkbox" id="showJa"' + (settings().showJa ? " checked" : "") + " style=\"accent-color:var(--primary)\"> 訳を全部出す</label>"
+    + "</div>"
+    + '<div class="tabs" id="tabs">'
+    +   '<button type="button" data-tab="text" aria-current="' + (studyTab==="text") + '">本文<span class="count num">'
+    +     m.sentences.length + "</span></button>"
+    +   '<button type="button" data-tab="vocab" aria-current="' + (studyTab==="vocab") + '">重要語<span class="count num">'
+    +     m.vocab.length + "</span></button>"
+    +   '<button type="button" data-tab="marks" aria-current="' + (studyTab==="marks") + '">弱点<span class="count num">'
+    +     unresolved + "</span></button>"
+    + "</div>"
+    + '<div id="tabbody"></div>';
+
+  $("#showJa").onchange = (e) => { settings().showJa = e.target.checked; save(); renderTab(m); };
+  $("#tabs").onclick = (e) => {
+    const b = e.target.closest("[data-tab]");
+    if (!b) return;
+    studyTab = b.dataset.tab;
+    $("#tabs").querySelectorAll("[data-tab]").forEach(x =>
+      x.setAttribute("aria-current", String(x.dataset.tab === studyTab)));
+    renderTab(m);
+  };
+  renderTab(m);
+  renderPlayer(m);
+}
+
+function renderTab(m){
+  const box = $("#tabbody");
+  if (!box) return;
+  if (studyTab === "text") renderText(m, box);
+  else if (studyTab === "vocab") renderVocab(m, box);
+  else renderMarkList(m, box);
+}
+
+/* ---------- 本文タブ ---------- */
+function renderText(m, box){
+  const pr = progressOf(m.id);
+  const marks = marksOf(m.id);
+  box.innerHTML = '<div id="sentences">' + m.parts.map((p,i) => ''
+    + '<section class="part">'
+    +   '<div class="part-head"><span class="pn">P' + (i+1) + "</span><span><b>" + esc(p.title) + "</b>"
+    +     (p.summary ? '<span class="s">' + esc(p.summary) + "</span>" : "") + "</span></div>"
+    +   p.sentenceIds.map(sid => {
+          const s = m.sentences.find(x => x.id === sid);
+          return s ? rowHTML(m, s, pr, marks) : "";
+        }).join("")
+    + "</section>").join("") + "</div>";
+
+  const cont = $("#sentences");
+  const capture = () => {
+    const sel = window.getSelection();
+    if (!sel || sel.isCollapsed) return;
+    const text = sel.toString().trim();
+    if (!text) return;
+    let node = sel.anchorNode;
+    while (node && node !== cont){
+      if (node.nodeType === 1 && node.dataset && node.dataset.txt){
+        selCache.set(node.dataset.txt, text);
+        return;
+      }
+      node = node.parentNode;
+    }
+  };
+  cont.addEventListener("mouseup", capture);
+  cont.addEventListener("touchend", capture);
+
+  cont.onclick = (e) => {
+    const t = e.target;
+    const play = t.closest("[data-play]");
+    if (play){ reader.playFrom(m.sentences.findIndex(s => s.id === play.dataset.play)); return; }
+
+    const rev = t.closest("[data-reveal]");
+    if (rev){ revealed.add(rev.dataset.reveal); patchRow(m, rev.dataset.reveal); return; }
+
+    const rd = t.closest("[data-read]");
+    if (rd){
+      const pr2 = progressOf(m.id);
+      const id = rd.dataset.read;
+      const i = pr2.readSentenceIds.indexOf(id);
+      if (i >= 0) pr2.readSentenceIds.splice(i,1); else pr2.readSentenceIds.push(id);
+      save(); patchRow(m, id); refreshProgressBar(m);
+      return;
+    }
+    const mn = t.closest("[data-menu]");
+    if (mn){
+      const id = mn.dataset.menu;
+      const was = openMenu;
+      openMenu = (was === id) ? "" : id;
+      if (was) patchRow(m, was);
+      if (openMenu) patchRow(m, openMenu);
+      return;
+    }
+    const mk = t.closest("[data-mark]");
+    if (mk){
+      const sid = mk.dataset.sid;
+      openMenu = "";
+      addMark(m, sid, mk.dataset.mark, selCache.get(sid) || "");
+      selCache.delete(sid);
+      patchRow(m, sid);
+      refreshMarkBadge(m);
+      return;
+    }
+    const jump = t.closest("[data-jump]");
+    if (jump){
+      e.preventDefault();
+      studyTab = "marks";
+      $("#tabs").querySelectorAll("[data-tab]").forEach(x =>
+        x.setAttribute("aria-current", String(x.dataset.tab === "marks")));
+      renderTab(m);
+      const el = document.getElementById("mark-" + jump.dataset.jump);
+      if (el) el.scrollIntoView({ behavior:"smooth", block:"center" });
+      return;
+    }
+    if (openMenu && !t.closest(".pop")){ const was = openMenu; openMenu = ""; patchRow(m, was); }
+  };
+}
+function patchRow(m, sid){
+  const el = document.getElementById("sentence-" + sid);
+  if (!el) return;
+  const s = m.sentences.find(x => x.id === sid);
+  if (!s) return;
+  el.outerHTML = rowHTML(m, s, progressOf(m.id), marksOf(m.id));
+}
+function refreshProgressBar(m){
+  const pr = progressOf(m.id);
+  const read = pr.readSentenceIds.length;
+  const pct = m.sentences.length ? Math.round(read/m.sentences.length*100) : 0;
+  const bar = viewEl().querySelector(".bar i");
+  if (bar) bar.style.width = pct + "%";
+  const label = viewEl().querySelector(".row .tiny.muted.num");
+  if (label) label.textContent = "音読 " + read + "/" + m.sentences.length;
+}
+function paintReader(){
+  if (currentView !== "study") return;
+  document.querySelectorAll("#sentences .sent").forEach(el => {
+    const on = el.id === "sentence-" + (reader.sentences[reader.index] || {}).id;
+    el.classList.toggle("cur", on);
+    el.classList.toggle("speaking", on && reader.playing);
+    const no = el.querySelector(".no");
+    if (no) no.setAttribute("aria-current", String(on));
+  });
+  const pb = $("#playBtn");
+  if (pb) pb.textContent = reader.playing ? "■" : "▶";
+  if (pb) pb.setAttribute("aria-label", reader.playing ? "停止" : "再生");
+  const pos = $("#pos");
+  if (pos) pos.textContent = (reader.index+1) + " / " + reader.sentences.length;
+  const err = $("#ttsErr");
+  if (err){ err.textContent = reader.error || ""; err.hidden = !reader.error; }
+}
+function scrollToCurrent(){
+  const s = reader.sentences[reader.index];
+  if (!s) return;
+  const el = document.getElementById("sentence-" + s.id);
+  if (el) el.scrollIntoView({ behavior:"smooth", block:"center" });
+}
+
+function refreshMarkBadge(m){
+  const badge = viewEl().querySelector('[data-tab="marks"] .count');
+  if (badge) badge.textContent = marksOf(m.id).filter(k => !k.resolved).length;
+}
+
+/* ---------- プレイヤー ---------- */
+function renderPlayer(m){
+  const st = settings();
+  const total = m.sentences.length;
+  const whole = reader.range[0] === 0 && reader.range[1] >= total-1;
+
+  playerSlot().innerHTML = ''
+    + '<div class="player"><div class="player-in">'
+    +   '<p id="ttsErr" class="tiny" style="color:var(--danger);margin:0 0 7px" hidden></p>'
+    +   (tts.supported() ? "" : '<p class="tiny" style="color:var(--marker);margin:0 0 7px">'
+        + "このブラウザは音声合成に対応していません。Chrome / Edge / Safari でお試しください。</p>")
+    +   '<div class="main">'
+    +     '<button type="button" class="skip" id="prev" aria-label="前の文">◀◀</button>'
+    +     '<button type="button" class="play" id="playBtn" aria-label="再生">▶</button>'
+    +     '<button type="button" class="skip" id="next" aria-label="次の文">▶▶</button>'
+    +     '<span class="pos" id="pos">1 / ' + total + "</span>"
+    +     '<label style="margin-left:auto">速さ<select id="rate">'
+    +       RATE_STEPS.map(r => '<option value="' + r + '"' + (r === st.rate ? " selected" : "") + ">"
+            + r.toFixed(2) + "x</option>").join("") + "</select></label>"
+    +     "<label>回数<select id=\"repeat\">"
+    +       [1,2,3,5].map(n => '<option value="' + n + '"' + (n === st.repeat ? " selected" : "") + ">"
+            + n + "回</option>").join("") + "</select></label>"
+    +   "</div>"
+    +   '<div class="opts">'
+    +     '<label><input type="checkbox" id="adv"' + (st.autoAdvance ? " checked" : "") + "> 次の文へ進む</label>"
+    +     '<label><input type="checkbox" id="loop"' + (st.loop ? " checked" : "") + "> 範囲をくり返す</label>"
+    +     '<span class="rng"><span>範囲</span>'
+    +       '<button type="button" data-range="all" aria-pressed="' + whole + '">全文</button>'
+    +       m.parts.map((p,i) => '<button type="button" data-range="' + esc(p.id) + '" aria-pressed="'
+            + (!whole && isPartRange(m,p)) + '">P' + (i+1) + "</button>").join("")
+    +     "</span>"
+    +     '<span id="voiceSlot"></span>'
+    +   "</div>"
+    + "</div></div>";
+
+  $("#playBtn").onclick = () => { reader.toggle(); if (reader.playing) scrollToCurrent(); };
+  $("#prev").onclick = () => reader.step(-1);
+  $("#next").onclick = () => reader.step(1);
+  $("#rate").onchange = (e) => { settings().rate = Number(e.target.value); save(); };
+  $("#repeat").onchange = (e) => { settings().repeat = Number(e.target.value); save(); };
+  $("#adv").onchange = (e) => { settings().autoAdvance = e.target.checked; save(); };
+  $("#loop").onchange = (e) => { settings().loop = e.target.checked; save(); };
+  playerSlot().querySelectorAll("[data-range]").forEach(b => {
+    b.onclick = () => {
+      const key = b.dataset.range;
+      if (key === "all") reader.range = [0, Math.max(0, total-1)];
+      else {
+        const p = m.parts.find(x => x.id === key);
+        if (p){
+          const first = m.sentences.findIndex(s => s.id === p.sentenceIds[0]);
+          const last = m.sentences.findIndex(s => s.id === p.sentenceIds[p.sentenceIds.length-1]);
+          reader.range = [first, last];
+          reader.index = first;
+        }
+      }
+      renderPlayer(m); paintReader(); scrollToCurrent();
+    };
+  });
+  mountVoicePicker();
+  paintReader();
+}
+function isPartRange(m, p){
+  const first = m.sentences.findIndex(s => s.id === p.sentenceIds[0]);
+  const last = m.sentences.findIndex(s => s.id === p.sentenceIds[p.sentenceIds.length-1]);
+  return reader.range[0] === first && reader.range[1] === last;
+}
+/** 声の一覧は非同期に届くブラウザがあるので、届いてから差し込む。 */
+function mountVoicePicker(){
+  const slot = $("#voiceSlot");
+  if (!slot) return;
+  const draw = () => {
+    const vs = tts.voices();
+    const here = $("#voiceSlot");
+    if (!here || vs.length < 2) return;
+    const cur = settings().voiceURI;
+    here.innerHTML = "<label>声<select id=\"voice\" style=\"max-width:9.5rem\">"
+      + '<option value="">既定</option>'
+      + vs.map(v => '<option value="' + esc(v.voiceURI) + '"' + (v.voiceURI === cur ? " selected" : "") + ">"
+          + esc(v.name) + "</option>").join("")
+      + "</select></label>";
+    $("#voice").onchange = (e) => { settings().voiceURI = e.target.value; save(); };
+  };
+  draw();
+  if (tts.supported()) speechSynthesis.addEventListener("voiceschanged", draw, { once:true });
+}
+
+/* ---------- 重要語タブ ---------- */
+function renderVocab(m, box){
+  const pr = progressOf(m.id);
+  if (!m.vocab.length){
+    box.innerHTML = '<div class="empty">この教材には重要語がありません。'
+      + (m.aiGenerated ? "" : "対訳なしで取り込んだ教材には語義が付きません。") + "</div>";
+    return;
+  }
+  box.innerHTML = '<div class="vlist">' + m.vocab.map(v => {
+    const learned = pr.learnedVocabIds.indexOf(v.id) >= 0;
+    return '<article class="v">'
+      + '<div style="flex:1;min-width:0">'
+      +   '<div class="row" style="gap:7px">'
+      +     '<span class="word">' + esc(v.word) + "</span>"
+      +     (v.phonetic ? '<span class="ph">' + esc(v.phonetic) + "</span>" : "")
+      +     (v.pos ? '<span class="chip">' + esc(v.pos) + "</span>" : "")
+      +   "</div>"
+      +   '<div class="mean">' + esc(v.meaning) + "</div>"
+      +   (v.example ? '<div class="ex">' + esc(v.example)
+          + (v.exampleJa ? '<span class="exja">' + esc(v.exampleJa) + "</span>" : "") + "</div>" : "")
+      + "</div>"
+      + '<div class="side">'
+      +   '<button type="button" class="chip" data-say="' + esc(v.word) + '" title="読み上げる">♪</button>'
+      +   '<button type="button" class="chip' + (learned ? " learned" : "") + '" data-learn="' + esc(v.id) + '">'
+      +     (learned ? "覚えた ✓" : "覚えた") + "</button>"
+      + "</div>"
+      + "</article>";
+  }).join("") + "</div>"
+  + '<p class="tiny muted" style="margin-top:12px">覚えた語は ✓ が付きます。用例は本文のその文です。</p>';
+
+  box.onclick = (e) => {
+    const say = e.target.closest("[data-say]");
+    if (say){ reader.stop(); tts.speak(say.dataset.say, { rate: settings().rate }); return; }
+    const lr = e.target.closest("[data-learn]");
+    if (lr){
+      const id = lr.dataset.learn;
+      const i = pr.learnedVocabIds.indexOf(id);
+      if (i >= 0) pr.learnedVocabIds.splice(i,1); else pr.learnedVocabIds.push(id);
+      save();
+      lr.classList.toggle("learned", pr.learnedVocabIds.indexOf(id) >= 0);
+      lr.textContent = pr.learnedVocabIds.indexOf(id) >= 0 ? "覚えた ✓" : "覚えた";
+    }
+  };
+}
+
+/* ============================================================
+   11. 弱点マーク
+   印を付けたらその場で解説を頼み、弱点ノートに残す。
+   ============================================================ */
+function addMark(m, sid, kind, selectedText){
+  const s = m.sentences.find(x => x.id === sid);
+  if (!s) return;
+  const mark = {
+    id: newId("k"), materialId: m.id, materialTitle: m.title,
+    sentenceId: s.id, sentenceEn: s.en, sentenceJa: s.ja,
+    kind, selectedText: selectedText || "",
+    explanation: null,
+    status: AI ? "loading" : "idle",
+    errorMessage: "", createdAt: Date.now(), resolved: false
+  };
+  DB.marks.unshift(mark);
+  save();
+  if (AI) runExplain(mark.id);
+}
+async function runExplain(markId){
+  const mark = DB.marks.find(k => k.id === markId);
+  if (!mark) return;
+  mark.status = "loading"; mark.errorMessage = "";
+  save(); repaintMark(markId);
+  try {
+    mark.explanation = await explainMark(mark, getMaterial(mark.materialId));
+    mark.status = "done";
+  } catch(e){
+    mark.status = "error";
+    mark.errorMessage = (e && e.message) || "解説を取得できませんでした。";
+  }
+  save(); repaintMark(markId);
+}
+function repaintMark(markId){
+  const el = document.getElementById("mark-" + markId);
+  const mark = DB.marks.find(k => k.id === markId);
+  if (el && mark){ el.outerHTML = markHTML(mark, el.dataset.ctx === "note"); }
+  // 本文タブのチップ（… → ✓）も追いつかせる
+  if (mark && currentView === "study" && studyTab === "text"){
+    const m = getMaterial(mark.materialId);
+    if (m) patchRow(m, mark.sentenceId);
+  }
+  const badge = $("#tabs") && $("#tabs").querySelector('[data-tab="marks"] .count');
+  if (badge && currentView === "study"){
+    badge.textContent = marksOf(currentMaterialId).filter(k => !k.resolved).length;
+  }
+}
+/** 選んだ箇所を文の中で目立たせる。 */
+function highlighted(en, sel){
+  if (!sel) return esc(en);
+  const i = en.indexOf(sel);
+  if (i < 0) return esc(en);
+  return esc(en.slice(0,i)) + '<span class="hl">' + esc(sel) + "</span>" + esc(en.slice(i+sel.length));
+}
+function markHTML(k, showMaterial){
+  const e = k.explanation;
+  return '<article class="mark' + (k.resolved ? " res" : "") + '" id="mark-' + esc(k.id) + '" data-ctx="'
+    + (showMaterial ? "note" : "study") + '">'
+    + '<div class="row" style="gap:7px">'
+    +   '<span class="chip k-' + k.kind + '">' + esc(WEAKNESS_LABEL[k.kind]) + "</span>"
+    +   (showMaterial ? '<button type="button" class="chip" data-open="' + esc(k.materialId) + '">'
+        + esc(truncate(k.materialTitle, 20)) + "</button>" : "")
+    +   '<span class="tiny muted" style="margin-left:auto">' + esc(ago(k.createdAt)) + "</span>"
+    + "</div>"
+    + '<p class="q">' + highlighted(k.sentenceEn, k.selectedText) + "</p>"
+    + (k.sentenceJa ? '<p class="qja">' + esc(k.sentenceJa) + "</p>" : "")
+    + (k.status === "loading"
+        ? '<p class="tiny muted" style="margin:12px 0 0"><span class="spin"></span> Claude が解説を書いています…</p>' : "")
+    + (k.status === "idle"
+        ? '<p class="tiny muted" style="margin:12px 0 0">印だけ残しました。' + (AI ? "" : "この画面では AI 解説が使えません。") + "</p>" : "")
+    + (k.status === "error" ? '<p class="tiny" style="color:var(--danger);margin:12px 0 0">' + esc(k.errorMessage) + "</p>" : "")
+    + (e && k.status === "done"
+        ? '<div class="exp">'
+          + '<div class="head">' + esc(e.headline) + "</div>"
+          + '<div class="b">' + esc(e.explanation) + "</div>"
+          + (e.keyPoints.length ? "<ul>" + e.keyPoints.map(p => "<li>" + esc(p) + "</li>").join("") + "</ul>" : "")
+          + (e.relatedExample
+              ? '<div class="rel"><span class="re">' + esc(e.relatedExample) + "</span>"
+                + (e.relatedExampleJa ? '<span class="rj">' + esc(e.relatedExampleJa) + "</span>" : "") + "</div>"
+              : "")
+          + "</div>"
+        : "")
+    + '<div class="row" style="margin-top:12px;gap:6px">'
+    +   (AI && k.status !== "loading"
+        ? '<button type="button" class="chip" data-explain="' + esc(k.id) + '">'
+          + (k.status === "done" ? "解説を作り直す" : "解説を取得") + "</button>" : "")
+    +   '<button type="button" class="chip' + (k.resolved ? " learned" : "") + '" data-resolve="' + esc(k.id) + '">'
+    +     (k.resolved ? "解決済み ✓" : "解決にする") + "</button>"
+    +   '<button type="button" class="chip" data-delmark="' + esc(k.id) + '" style="margin-left:auto">削除</button>'
+    + "</div>"
+    + "</article>";
+}
+function bindMarkList(root, after){
+  root.onclick = (e) => {
+    const ex = e.target.closest("[data-explain]");
+    if (ex){ runExplain(ex.dataset.explain); return; }
+    const rs = e.target.closest("[data-resolve]");
+    if (rs){
+      const k = DB.marks.find(x => x.id === rs.dataset.resolve);
+      if (k){ k.resolved = !k.resolved; save(); after ? after() : repaintMark(k.id); }
+      return;
+    }
+    const dl = e.target.closest("[data-delmark]");
+    if (dl){
+      DB.marks = DB.marks.filter(x => x.id !== dl.dataset.delmark);
+      save();
+      after ? after() : (document.getElementById("mark-" + dl.dataset.delmark) || {}).remove?.();
+      if (currentView === "study") renderTab(getMaterial(currentMaterialId));
+      return;
+    }
+    const op = e.target.closest("[data-open]");
+    if (op){ go("study", op.dataset.open); return; }
+  };
+}
+/* ---------- 学習画面の弱点タブ ---------- */
+function renderMarkList(m, box){
+  const list = marksOf(m.id).slice().sort((a,b) => Number(a.resolved) - Number(b.resolved) || b.createdAt - a.createdAt);
+  box.innerHTML = list.length
+    ? '<div class="vlist">' + list.map(k => markHTML(k, false)).join("") + "</div>"
+      + '<p class="tiny muted" style="margin-top:12px">本文タブで文の <b>？</b> を押すと印を付けられます。'
+      + "先に英文の一部をドラッグして選ぶと、その箇所について解説します。</p>"
+    : '<div class="empty">まだ印がありません。<br>本文タブで分からない文の <b>？</b> を押してください。</div>';
+  bindMarkList(box, () => renderTab(m));
+}
+
+/* ============================================================
+   12. 弱点ノート（教材をまたいで見る）
+   ============================================================ */
+let noteKind = "all";
+let noteShowResolved = false;
+function renderWeakness(){
+  let list = DB.marks.slice().sort((a,b) => b.createdAt - a.createdAt);
+  if (noteKind !== "all") list = list.filter(k => k.kind === noteKind);
+  if (!noteShowResolved) list = list.filter(k => !k.resolved);
+
+  const counts = { listening:0, vocab:0, grammar:0 };
+  DB.marks.filter(k => !k.resolved).forEach(k => { counts[k.kind]++; });
+  const top = KINDS.slice().sort((a,b) => counts[b]-counts[a])[0];
+
+  viewEl().innerHTML = ''
+    + '<p class="eyebrow">弱点ノート</p>'
+    + '<h1 style="margin-bottom:10px">つまずきの置き場</h1>'
+    + '<p class="lede" style="margin-bottom:6px">'
+    +   (DB.marks.length
+        ? "未解決 " + DB.marks.filter(k=>!k.resolved).length + " 件。"
+          + (counts[top] ? "いま一番多いのは<b>" + esc(WEAKNESS_LABEL[top]) + "</b>です。" : "")
+        : "学習画面で分からない文に印を付けると、ここに教材をまたいで溜まります。")
+    + "</p>"
+    + '<div class="row" style="margin:18px 0 4px;gap:6px">'
+    +   '<div class="seg">'
+    +     '<button type="button" data-kind="all" aria-pressed="' + (noteKind==="all") + '">すべて</button>'
+    +     KINDS.map(k => '<button type="button" data-kind="' + k + '" aria-pressed="' + (noteKind===k) + '">'
+          + esc(WEAKNESS_SHORT[k]) + '<span class="count num" style="margin-left:4px;color:var(--faint)">'
+          + counts[k] + "</span></button>").join("")
+    +   "</div>"
+    +   '<label class="tiny muted" style="margin-left:auto;display:inline-flex;gap:5px;align-items:center;white-space:nowrap">'
+    +     '<input type="checkbox" id="showRes"' + (noteShowResolved ? " checked" : "")
+    +     ' style="accent-color:var(--primary)"> 解決済みも出す</label>'
+    + "</div>"
+    + '<div id="notelist">' + (list.length
+        ? '<div class="vlist">' + list.map(k => markHTML(k, true)).join("") + "</div>"
+        : '<div class="empty">' + (DB.marks.length ? "この条件の弱点はありません。" : "まだ印がありません。") + "</div>") + "</div>";
+
+  viewEl().querySelectorAll("[data-kind]").forEach(b => {
+    b.onclick = () => { noteKind = b.dataset.kind; renderWeakness(); };
+  });
+  $("#showRes").onchange = (e) => { noteShowResolved = e.target.checked; renderWeakness(); };
+  bindMarkList($("#notelist"), () => renderWeakness());
+}
+
+/* ============================================================
+   13. 起動
+   ============================================================ */
+function seedSamples(){
+  const have = new Set(DB.materials.map(m => m.id));
+  let added = 0;
+  for (const s of SAMPLES){
+    if (have.has(s.id)) continue;
+    const copy = JSON.parse(JSON.stringify(s));
+    copy.createdAt = Date.now() - (copy.daysAgo || 0) * 86400000;
+    delete copy.daysAgo;
+    copy.notice = "";
+    DB.materials.push(copy);
+    added++;
+  }
+  if (added) save();
+  return added;
+}
+document.getElementById("nav").onclick = (e) => {
+  const b = e.target.closest("[data-go]");
+  if (b) go(b.dataset.go);
+};
+document.addEventListener("click", (e) => {
+  // ヒーローやカードからの遷移（各画面の外側で拾う）
+  const go2 = e.target.closest("#view [data-go]");
+  if (go2){ go(go2.dataset.go); return; }
+  const open = e.target.closest("#view .mat[data-open], #view .hero [data-open]");
+  if (open){ go("study", open.dataset.open); }
+});
+window.addEventListener("pagehide", () => tts.cancel());
+document.addEventListener("keydown", (e) => {
+  if (currentView !== "study") return;
+  if (e.target.matches("input, textarea, select")) return;
+  if (e.code === "Space"){ e.preventDefault(); reader.toggle(); if (reader.playing) scrollToCurrent(); }
+  else if (e.key === "ArrowRight"){ reader.step(1); }
+  else if (e.key === "ArrowLeft"){ reader.step(-1); }
+});
+
+load();
+seedSamples();
+go("home");
+initAI();
+</script>
+
+</body>
+</html>

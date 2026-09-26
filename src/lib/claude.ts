@@ -17,7 +17,7 @@ import { WEAKNESS_LABEL } from "./types";
 
 const MODEL = process.env.SCRIPTFLOW_MODEL ?? "claude-opus-5";
 
-/** Claude Opus 5 の拒否時に自動で別モデルへ回すサーバサイドフォールバック。 */
+/** モデルが応じられないときに自動で別モデルへ回すサーバサイドフォールバック。 */
 const FALLBACK_BETA = "server-side-fallback-2026-07-01";
 
 /** 1 回の翻訳リクエストに載せる文の数。 */
