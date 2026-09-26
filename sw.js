@@ -1,7 +1,7 @@
 // オフラインでも開けるようにするための Service Worker。
 // ファイルを変更したら CACHE の番号を上げると、次回起動時に新しい版へ入れ替わる。
 
-const CACHE = 'mekuru-v1';
+const CACHE = 'mekuru-v2';
 const FONT_CACHE = 'mekuru-fonts-v1';
 
 const ASSETS = [
@@ -27,16 +27,17 @@ const ASSETS = [
   './js/swipe.js',
   './js/ui.js',
   './js/util.js',
+  './js/views/analysis.js',
+  './js/views/clear.js',
   './js/views/common.js',
   './js/views/deck.js',
-  './js/views/decks.js',
   './js/views/home.js',
   './js/views/import.js',
+  './js/views/library.js',
   './js/views/quiz.js',
-  './js/views/result.js',
   './js/views/settings.js',
-  './js/views/stats.js',
-  './js/views/swipe.js',
+  './js/views/study.js',
+  './js/views/weak.js',
   './js/views/word-sheet.js',
 ];
 

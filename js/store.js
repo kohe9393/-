@@ -1,22 +1,38 @@
 // データの保存（端末の localStorage）。単語帳・学習記録・設定をまとめて1つの JSON で持つ。
 
 import { dayKey, normalizeText, uid } from './util.js';
-import { newState, noteConfusion, review } from './srs.js';
+import { newState, noteConfusion, review, status } from './srs.js';
 import { toCSV } from './parser.js';
 
 export const STORAGE_KEY = 'mekuru.v1';
 
 export const DEFAULT_SETTINGS = {
-  sessionSize: 20,
-  newPerSession: 10,
+  dailyGoal: 30, // 1日の目標回答数（1回の出題数にもなる）
   direction: 'term', // term: 単語→意味 / meaning: 意味→単語 / mix
-  requeueGap: 3,
   autoSpeak: false,
-  autoAdvance: true,
+  showButtons: false, // スワイプの代わりに押せるボタン
+  autoAdvance: true, // 4択で正解したら自動で次へ
   theme: 'auto',
   deck: 'all',
-  mode: 'smart',
+  coachQ: false, // 操作説明を見たか（出題側）
+  coachA: false, // 操作説明を見たか（答え側）
 };
+
+// 以前の版（streak / interval / ease）の記録を今の形に合わせる
+function migrateState(st) {
+  if (!st || typeof st !== 'object' || 'iv' in st) return st;
+  const s = { ...newState(), seen: st.seen || 0, correct: st.correct || 0, wrong: st.wrong || 0, last: st.last || 0, hist: st.hist || '', conf: st.conf || {} };
+  s.iv = st.interval || 0;
+  s.ef = st.ease || 2.5;
+  s.due = st.due || 0;
+  s.n = st.streak || 0;
+  s.lapses = st.lapses || 0;
+  if (s.seen && s.hist.endsWith('0')) {
+    s.weak = 'miss';
+    s.weakAt = s.last;
+  }
+  return s;
+}
 
 function memoryStorage() {
   const m = new Map();
@@ -56,7 +72,8 @@ function validate(data) {
   if (!data || typeof data !== 'object' || !Array.isArray(data.decks)) throw new Error('単語帳のデータが見つかりません');
   const out = emptyData();
   out.settings = { ...DEFAULT_SETTINGS, ...(data.settings || {}) };
-  out.stats = data.stats && typeof data.stats === 'object' ? data.stats : {};
+  out.stats = {};
+  for (const [id, st] of Object.entries(data.stats && typeof data.stats === 'object' ? data.stats : {})) out.stats[id] = migrateState(st);
   out.daily = data.daily && typeof data.daily === 'object' ? data.daily : {};
   out.decks = data.decks.map((d) => ({
     id: String(d.id || uid()),
@@ -67,6 +84,10 @@ function validate(data) {
       .filter((w) => w.term && w.meaning),
   }));
   return out;
+}
+
+function structuredCloneSafe(v) {
+  return JSON.parse(JSON.stringify(v));
 }
 
 export class Store {
@@ -217,17 +238,39 @@ export class Store {
 
   getState = (id) => this.state(id);
 
-  record(id, correct, { now = Date.now(), confusedWith = null } = {}) {
-    let s = review(this.state(id) || newState(), correct, now);
+  /**
+   * 回答を記録する。戻り値を undo() に渡すと記録前に戻せる。
+   * @param answer { correct, confidence, ms, confusedWith, now }
+   */
+  record(id, { correct, confidence = 'mid', ms = null, confusedWith = null, now = Date.now() } = {}) {
+    const prev = this.state(id);
+    const key = dayKey(now);
+    const prevDay = this.data.daily[key] ? structuredCloneSafe(this.data.daily[key]) : null;
+    let s = review(prev || newState(), { correct, confidence, ms, now });
     if (!correct && confusedWith && confusedWith !== id) s = noteConfusion(s, confusedWith);
     this.data.stats[id] = s;
-    const key = dayKey(now);
-    const day = this.data.daily[key] || { a: 0, c: 0 };
+
+    const day = this.data.daily[key] || { a: 0, c: 0, u: [], m: [], g: 0 };
+    day.u = day.u || [];
+    day.m = day.m || [];
+    day.g = day.g || 0;
     day.a += 1;
     if (correct) day.c += 1;
+    if (!day.u.includes(id)) day.u.push(id);
+    if (!correct && !day.m.includes(id)) day.m.push(id);
+    if (status(prev) !== 'learned' && status(s) === 'learned') day.g += 1;
     this.data.daily[key] = day;
     this.save();
-    return s;
+    return { id, prev, next: s, key, prevDay };
+  }
+
+  undo(token) {
+    if (!token) return;
+    if (token.prev) this.data.stats[token.id] = token.prev;
+    else delete this.data.stats[token.id];
+    if (token.prevDay) this.data.daily[token.key] = token.prevDay;
+    else delete this.data.daily[token.key];
+    this.save();
   }
 
   resetStats(ids = null) {

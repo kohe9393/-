@@ -28,6 +28,25 @@ export function dayKey(time = Date.now()) {
   return `${d.getFullYear()}-${m}-${day}`;
 }
 
+export function startOfDay(time = Date.now()) {
+  const d = new Date(time);
+  d.setHours(0, 0, 0, 0);
+  return d.getTime();
+}
+
+/** 今日を0として何日前か（ローカル日付で数える） */
+export function daysAgo(time, now = Date.now()) {
+  return Math.round((startOfDay(now) - startOfDay(time)) / DAY);
+}
+
+export function agoLabel(time, now = Date.now()) {
+  if (!time) return '';
+  const n = daysAgo(time, now);
+  if (n <= 0) return '今日';
+  if (n === 1) return '昨日';
+  return `${n}日前`;
+}
+
 export function normalizeText(s) {
   return String(s ?? '').trim().toLowerCase().replace(/\s+/g, ' ');
 }
@@ -74,8 +93,7 @@ export function looksSimilar(a, b) {
 }
 
 export function relativeDays(time, now = Date.now()) {
-  const days = Math.round((time - now) / DAY);
-  if (time - now < 60 * MINUTE) return 'まもなく';
+  const days = Math.round((startOfDay(time) - startOfDay(now)) / DAY);
   if (days <= 0) return '今日';
   if (days === 1) return '明日';
   if (days < 30) return `${days}日後`;

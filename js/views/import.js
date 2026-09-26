@@ -92,7 +92,7 @@ export function render({ store, go, params }) {
   }
   syncTarget();
 
-  const submit = el('button', { class: 'btn btn-primary btn-block', disabled: true, onclick: doImport }, '取り込む');
+  const submit = el('button', { class: 'btn btn-dark btn-block', disabled: true, onclick: doImport }, '取り込む');
 
   function update() {
     result = parseWordList(text.value, { delimiter: delimiter.value, swap: swap.checked });
@@ -152,7 +152,11 @@ export function render({ store, go, params }) {
       return;
     }
     toast(duplicates ? `${added}語を追加しました（重複${duplicates}語はスキップ）` : `${added}語を追加しました`);
-    go('deck', { id: deckId });
+    if (presetDeck) go('deck', { id: deckId });
+    else {
+      store.setSetting('deck', deckId);
+      go('home');
+    }
   }
 
   const fillSample = () => {
@@ -168,13 +172,13 @@ export function render({ store, go, params }) {
     el: el(
       'div',
       { class: 'page' },
-      topbar(presetDeck ? `「${presetDeck.name}」に追加` : '単語帳を読み込む', { back: () => (presetDeck ? go('deck', { id: presetDeck.id }) : go('decks')) }),
+      topbar(presetDeck ? `「${presetDeck.name}」に追加` : '単語帳を読み込む', { back: () => (presetDeck ? go('deck', { id: presetDeck.id }) : store.decks.length ? go('library') : go('home')) }),
       el(
         'div',
         { class: 'steps' },
         el(
           'section',
-          { class: 'panel step' },
+          { class: 'card step' },
           el('h2', { class: 'step-title' }, el('span', { class: 'step-no' }, '1'), '単語リストを入れる'),
           drop,
           el('p', { class: 'hint' }, 'または下に貼り付け：'),
@@ -188,7 +192,7 @@ export function render({ store, go, params }) {
         ),
         el(
           'section',
-          { class: 'panel step' },
+          { class: 'card step' },
           el('h2', { class: 'step-title' }, el('span', { class: 'step-no' }, '2'), '読み取り結果を確認'),
           el('label', { class: 'field' }, el('span', {}, '区切り方'), delimiter),
           el('label', { class: 'check' }, swap, '単語と意味を入れ替える'),
@@ -198,7 +202,7 @@ export function render({ store, go, params }) {
         ),
         el(
           'section',
-          { class: 'panel step' },
+          { class: 'card step' },
           el('h2', { class: 'step-title' }, el('span', { class: 'step-no' }, '3'), '追加先'),
           el(
             'div',

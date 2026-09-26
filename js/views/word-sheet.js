@@ -1,12 +1,13 @@
 // 単語の追加・編集シート
 
-import { el, relativeDays } from '../util.js';
+import { el, relativeDays, agoLabel } from '../util.js';
 import { icons } from '../icons.js';
 import { openSheet, toast, confirmDialog } from '../ui.js';
-import { MASTERY, mastery, weakReasons, isWeak } from '../srs.js';
+import { STATUS, status, weakReasons, dots } from '../srs.js';
 import { canSpeak, speak } from '../speech.js';
+import { dotsEl, recentDots } from './common.js';
 
-export function openWordSheet(store, { wordId = null, deckId = null, onChange = () => {} }) {
+export function openWordSheet(store, { wordId = null, deckId = null, focus = null, onChange = () => {} }) {
   const word = wordId ? store.word(wordId) : null;
   const targetDeck = word ? store.deckOf(word.id) : store.deck(deckId);
   if (!targetDeck) return;
@@ -21,20 +22,35 @@ export function openWordSheet(store, { wordId = null, deckId = null, onChange = 
   if (word) {
     const s = store.state(word.id);
     if (s?.seen) {
+      const st = status(s);
       info.push(
         el(
-          'p',
-          { class: 'stat-line' },
-          el('span', {}, '正解 ', el('b', {}, s.correct)),
-          el('span', {}, 'ミス ', el('b', {}, s.wrong)),
-          el('span', {}, MASTERY[mastery(s)].label),
-          el('span', {}, '次の復習 ', el('b', {}, relativeDays(s.due))),
+          'div',
+          { class: 'card-pad', style: { background: 'var(--card-2)', borderRadius: '16px', display: 'flex', flexDirection: 'column', gap: '10px' } },
+          el(
+            'div',
+            { style: { display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' } },
+            el('span', { class: `tag ${st === 'weak' ? 'tag-ng' : st === 'learned' ? 'tag-ok' : ''}` }, STATUS[st].label),
+            dotsEl(dots(s)),
+            el('span', { class: 'small muted' }, '直近'),
+            recentDots(s.hist),
+          ),
+          el(
+            'p',
+            { class: 'stat-line' },
+            el('span', {}, '正解 ', el('b', {}, s.correct)),
+            el('span', {}, 'ミス ', el('b', {}, s.wrong)),
+            el('span', {}, '最後 ', el('b', {}, agoLabel(s.last))),
+            el('span', {}, '次の出題 ', el('b', {}, relativeDays(s.due))),
+          ),
+          s.weak &&
+            el(
+              'div',
+              { class: 'tags' },
+              weakReasons(word, s, { lookup: (id) => store.word(id), neighbors: targetDeck.words }).map((r) => el('span', { class: r.kind === 'similar' || r.kind === 'confused' ? 'tag tag-mid' : 'tag tag-ng' }, r.text)),
+            ),
         ),
       );
-      if (isWeak(s)) {
-        const reasons = weakReasons(word, s, { lookup: (id) => store.word(id), neighbors: targetDeck.words });
-        info.push(el('div', { class: 'tags' }, el('span', { class: 'tag tag-mark' }, '苦手'), reasons.map((r) => el('span', { class: 'tag tag-again' }, r.text))));
-      }
     } else info.push(el('p', { class: 'stat-line' }, 'まだ学習していません'));
   }
 
@@ -50,7 +66,7 @@ export function openWordSheet(store, { wordId = null, deckId = null, onChange = 
       'div',
       { class: 'btn-row' },
       canSpeak() && el('button', { type: 'button', class: 'btn', onclick: () => speak(term.value) }, el('span', { html: icons.speaker }), '発音'),
-      el('button', { type: 'submit', class: 'btn btn-primary' }, word ? '保存する' : '追加する'),
+      el('button', { type: 'submit', class: 'btn btn-dark' }, word ? '保存する' : '追加する'),
     ),
     word &&
       el(
@@ -67,6 +83,7 @@ export function openWordSheet(store, { wordId = null, deckId = null, onChange = 
     onClose: () => changed && onChange(),
   });
   if (!word) setTimeout(() => term.focus(), 50);
+  else if (focus === 'note') setTimeout(() => note.focus(), 50);
 
   function save() {
     const entry = { term: term.value, meaning: meaning.value, example: example.value, note: note.value };
@@ -91,7 +108,7 @@ export function openWordSheet(store, { wordId = null, deckId = null, onChange = 
     term.focus();
   }
 
-  async function resetStats() {
+  function resetStats() {
     store.resetStats([word.id]);
     changed = true;
     toast('学習記録をリセットしました');

@@ -5,7 +5,7 @@ import { decodeBytes } from '../parser.js';
 import { canSpeak } from '../speech.js';
 import { topbar } from './common.js';
 
-export const APP_VERSION = '1.0.0';
+export const APP_VERSION = '2.0.0';
 
 export function render(ctx) {
   const { store, go, applyTheme } = ctx;
@@ -34,9 +34,8 @@ export function render(ctx) {
     el('div', { class: 'section-head' }, el('h2', {}, '学習')),
     el(
       'div',
-      { class: 'panel' },
-      option('1回の出題数', null, nums([10, 20, 30, 50], 'sessionSize', '語')),
-      option('1回に混ぜる新しい単語', '「おまかせ」で復習の単語に足す、未学習の単語の数です。', nums([5, 10, 20], 'newPerSession', '語')),
+      { class: 'card' },
+      option('1日の目標', '1回の出題数にもなります。達成するとホームと終了画面にしるしが付きます。', nums([20, 30, 50, 100], 'dailyGoal', '問')),
       option(
         '出題の向き',
         null,
@@ -51,18 +50,26 @@ export function render(ctx) {
           onChange: set('direction'),
         }),
       ),
-      option(
-        'まちがえた単語の再出題',
-        'まちがえた単語を、何枚あとにもう一度出すかを決めます。',
-        segmented({
-          label: '再出題の間隔',
-          value: s.requeueGap,
-          options: [2, 4, 6].map((n) => ({ value: n, label: `${n}枚あと` })),
-          onChange: set('requeueGap'),
-        }),
-      ),
-      option('クイズで正解したら自動で次へ', null, toggle('set-auto-advance', 'autoAdvance', '正解したら自動で次へ'), true),
+      option('スワイプ用のボタンを表示', 'カードの下に「自信アリ」「合っていた」などのボタンを出します。', toggle('set-buttons', 'showButtons', 'スワイプ用のボタンを表示'), true),
       canSpeak() && option('単語を自動で読み上げる', '単語が表示されたときに発音します（端末の読み上げ機能を使います）。', toggle('set-auto-speak', 'autoSpeak', '自動で読み上げる'), true),
+      option('4択で正解したら自動で次へ', null, toggle('set-auto-advance', 'autoAdvance', '正解したら自動で次へ'), true),
+      option(
+        '操作の説明',
+        '学習画面の最初に出るスワイプの説明を、もう一度表示します。',
+        el(
+          'button',
+          {
+            class: 'btn btn-sm',
+            style: { alignSelf: 'flex-start' },
+            onclick: () => {
+              store.setSetting('coachQ', false);
+              store.setSetting('coachA', false);
+              toast('次の学習で説明を表示します');
+            },
+          },
+          'もう一度見る',
+        ),
+      ),
     ),
   );
 
@@ -72,7 +79,7 @@ export function render(ctx) {
     el('div', { class: 'section-head' }, el('h2', {}, '表示')),
     el(
       'div',
-      { class: 'panel' },
+      { class: 'card' },
       option(
         'テーマ',
         null,
@@ -103,7 +110,7 @@ export function render(ctx) {
       { class: 'small muted' },
       `単語帳${store.decks.length}冊・${wordCount}語と学習記録は、この端末の中だけに保存されています。機種変更やブラウザのデータ削除に備えて、ときどきバックアップを書き出してください。`,
     ),
-    !store.persistent && el('p', { class: 'small', style: { color: 'var(--again-text)' } }, 'この画面ではデータを保存できません。閉じると消えるため、バックアップを書き出してください。'),
+    !store.persistent && el('p', { class: 'small', style: { color: 'var(--ng)' } }, 'この画面ではデータを保存できません。閉じると消えるため、バックアップを書き出してください。'),
     el(
       'div',
       { class: 'btn-row' },
@@ -151,14 +158,14 @@ export function render(ctx) {
     el('div', { class: 'section-head' }, el('h2', {}, 'アプリとして使う')),
     el(
       'div',
-      { class: 'panel panel-pad section' },
+      { class: 'card card-pad section' },
       el('p', { class: 'small' }, el('b', {}, 'iPhone / iPad：'), 'Safari で開き、共有ボタン →「ホーム画面に追加」。アプリのように全画面で使え、オフラインでも動きます。'),
       el('p', { class: 'small' }, el('b', {}, 'Android：'), 'Chrome のメニュー →「アプリをインストール」または「ホーム画面に追加」。'),
       el('p', { class: 'small muted' }, `めくる単語帳 v${APP_VERSION}`),
     ),
   );
 
-  return { el: el('div', { class: 'page' }, topbar('設定'), study, look, data, about) };
+  return { el: el('div', { class: 'page' }, topbar('設定', { back: () => go('home') }), study, look, data, about) };
 }
 
 /** テキストを「コピー」または「ファイルに保存」で持ち出すシート */

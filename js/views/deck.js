@@ -1,19 +1,19 @@
+// 単語帳の中身：セクション（50語ごと）・単語一覧・管理
+
 import { el, downloadText, relativeDays, normalizeText } from '../util.js';
 import { icons } from '../icons.js';
-import { masteryBar, promptDialog, confirmDialog, toast } from '../ui.js';
-import { overview } from '../analytics.js';
-import { mastery, isWeak, MASTERY } from '../srs.js';
-import { startButtons, topbar } from './common.js';
+import { promptDialog, confirmDialog, toast, openSheet, segmented } from '../ui.js';
+import { continueIndex, sections, SECTION_STARTS, sectionQueue } from '../queue.js';
+import { status, STATUS } from '../srs.js';
+import { progressBar, startSession, statusCounts, topbar } from './common.js';
 import { openWordSheet } from './word-sheet.js';
 import { exportSheet } from './settings.js';
 
 const FILTERS = [
   { id: 'all', label: 'すべて' },
+  { id: 'learned', label: '覚えた' },
   { id: 'weak', label: '苦手' },
   { id: 'new', label: '未学習' },
-  { id: 'learning', label: '学習中' },
-  { id: 'review', label: '定着中' },
-  { id: 'mastered', label: 'マスター' },
 ];
 const PAGE = 150;
 
@@ -21,59 +21,28 @@ export function render(ctx) {
   const { store, go, params, refresh } = ctx;
   const deck = store.deck(params.id);
   if (!deck) {
-    queueMicrotask(() => go('decks'));
+    queueMicrotask(() => go('library'));
     return { el: el('div') };
   }
+  const counts = statusCounts(deck.words, store.getState);
 
-  let filter = params.filter || 'all';
+  const sectionRows = sections(deck.words).map((sec) => {
+    const c = statusCounts(sec.words, store.getState);
+    return el(
+      'button',
+      { class: 'lib-row', type: 'button', onclick: () => sectionSheet(ctx, deck, sec) },
+      el('div', { class: 'lib-main' }, el('span', { class: 'lib-name num' }, `${sec.from}〜${sec.to}`), progressBar(c, sec.words.length)),
+      el('div', { class: 'lib-side' }, el('b', {}, c.learned), el('span', {}, `/${sec.words.length}`), c.weak ? el('small', { class: 'is-ng' }, `苦手 ${c.weak}`) : null),
+    );
+  });
+
+  // 単語一覧
+  let filter = 'all';
   let query = '';
   let shown = PAGE;
-
-  const ov = overview(deck.words, store.getState, store.data.daily);
-  const summary = el(
-    'section',
-    { class: 'panel panel-pad section' },
-    masteryBar(ov.counts, ov.total, { large: true }),
-    el(
-      'div',
-      { class: 'deck-meta' },
-      el('span', {}, el('b', {}, ov.total), '語'),
-      el('span', {}, '復習の時期 ', el('b', {}, ov.due)),
-      el('span', {}, '苦手 ', el('b', {}, ov.weak)),
-      el('span', {}, 'マスター ', el('b', {}, ov.counts.mastered)),
-    ),
-    startButtons(ctx, { deck: deck.id, mode: 'smart' }),
-  );
-
-  const addRow = el(
-    'div',
-    { class: 'btn-row' },
-    el('button', { class: 'btn', onclick: () => openWordSheet(store, { deckId: deck.id, onChange: refresh }) }, el('span', { html: icons.plus }), '単語を追加'),
-    el('button', { class: 'btn', onclick: () => go('import', { deck: deck.id }) }, el('span', { html: icons.upload }), 'まとめて追加'),
-  );
-
-  const list = el('ul', { class: 'list panel' });
+  const list = el('ul', { class: 'list card' });
   const more = el('button', { class: 'btn btn-sm', hidden: true, onclick: () => ((shown += PAGE), renderList()) }, 'もっと見る');
-  const countLabel = el('span', { class: 'muted small' });
-
-  const search = el(
-    'label',
-    { class: 'search' },
-    el('span', { html: icons.search }),
-    el('input', {
-      class: 'input',
-      id: 'deck-search',
-      type: 'search',
-      placeholder: '単語・意味で検索',
-      'aria-label': '単語・意味で検索',
-      oninput: (e) => {
-        query = normalizeText(e.target.value);
-        shown = PAGE;
-        renderList();
-      },
-    }),
-  );
-
+  const countLabel = el('span', { class: 'small muted' });
   const chipButtons = FILTERS.map((f) =>
     el(
       'button',
@@ -92,59 +61,35 @@ export function render(ctx) {
     ),
   );
 
-  function matches(word) {
-    const s = store.state(word.id);
-    if (filter === 'weak' && !isWeak(s)) return false;
-    if (filter !== 'all' && filter !== 'weak' && mastery(s) !== filter) return false;
-    if (query && !normalizeText(`${word.term} ${word.meaning}`).includes(query)) return false;
-    return true;
-  }
-
-  function row(word) {
-    const s = store.state(word.id);
-    const m = mastery(s);
-    const side = s?.seen
-      ? [el('span', { class: 'num' }, `${s.correct}/${s.seen} 正解`), el('span', {}, `次 ${relativeDays(s.due)}`)]
-      : [el('span', {}, '未学習')];
-    return el(
-      'li',
-      {},
-      el(
-        'button',
-        { class: 'row', onclick: () => openWordSheet(store, { wordId: word.id, onChange: refresh }) },
-        el('span', { class: 'dot', dataset: { m }, title: MASTERY[m].label }),
-        el(
-          'span',
-          { class: 'row-main' },
-          el('span', { class: 'row-term' }, word.term, isWeak(s) ? el('span', { class: 'tag tag-mark', style: { marginLeft: '8px' } }, '苦手') : null),
-          el('span', { class: 'row-meaning' }, word.meaning),
-        ),
-        el('span', { class: 'row-side' }, side),
-      ),
-    );
-  }
-
   function renderList() {
-    const hits = deck.words.filter(matches);
+    const hits = deck.words.filter((w) => {
+      const st = status(store.state(w.id));
+      if (filter !== 'all' && st !== filter) return false;
+      return !query || normalizeText(`${w.term} ${w.meaning}`).includes(query);
+    });
     countLabel.textContent = `${hits.length}語`;
-    list.replaceChildren(...(hits.length ? hits.slice(0, shown).map(row) : [el('li', { class: 'empty' }, '該当する単語はありません')]));
+    list.replaceChildren(
+      ...(hits.length
+        ? hits.slice(0, shown).map((w) => {
+            const s = store.state(w.id);
+            const st = status(s);
+            return el(
+              'li',
+              {},
+              el(
+                'button',
+                { class: 'row', type: 'button', onclick: () => openWordSheet(store, { wordId: w.id, onChange: refresh }) },
+                el('span', { class: 'sdot', dataset: { s: st }, title: STATUS[st].label }),
+                el('span', { class: 'row-main' }, el('span', { class: 'row-term' }, w.term), el('span', { class: 'row-meaning' }, w.meaning)),
+                el('span', { class: 'row-side' }, s?.seen ? `次 ${relativeDays(s.due)}` : '未学習'),
+              ),
+            );
+          })
+        : [el('li', { class: 'empty' }, '該当する単語はありません')]),
+    );
     more.hidden = hits.length <= shown;
   }
   renderList();
-
-  const manage = el(
-    'section',
-    { class: 'section' },
-    el('div', { class: 'section-head' }, el('h2', {}, '単語帳の管理')),
-    el(
-      'div',
-      { class: 'btn-row' },
-      el('button', { class: 'btn btn-sm', onclick: rename }, el('span', { html: icons.edit }), '名前を変更'),
-      el('button', { class: 'btn btn-sm', onclick: exportCSV }, el('span', { html: icons.download }), 'CSVで書き出す'),
-      el('button', { class: 'btn btn-sm', onclick: resetStats }, '学習記録をリセット'),
-      el('button', { class: 'btn btn-sm btn-danger', onclick: remove }, el('span', { html: icons.trash }), '単語帳を削除'),
-    ),
-  );
 
   async function rename() {
     const name = await promptDialog({ title: '単語帳の名前', label: '名前', value: deck.name });
@@ -156,14 +101,7 @@ export function render(ctx) {
 
   function exportCSV() {
     const csv = store.exportDeckCSV(deck.id);
-    exportSheet({
-      title: 'CSVで書き出す',
-      text: csv,
-      filename: `${deck.name}.csv`,
-      type: 'text/csv',
-      // Excel で文字化けしないように BOM を付ける
-      download: () => downloadText(`${deck.name}.csv`, `﻿${csv}`, 'text/csv'),
-    });
+    exportSheet({ title: 'CSVで書き出す', text: csv, filename: `${deck.name}.csv`, download: () => downloadText(`${deck.name}.csv`, `﻿${csv}`, 'text/csv') });
   }
 
   async function resetStats() {
@@ -179,27 +117,96 @@ export function render(ctx) {
     if (!ok) return;
     store.deleteDeck(deck.id);
     toast('単語帳を削除しました');
-    go('decks');
+    go('library');
   }
 
   return {
     el: el(
       'div',
       { class: 'page' },
-      topbar(deck.name, { back: () => go('decks') }),
-      summary,
-      addRow,
+      topbar(deck.name, { back: () => go('library') }),
+      el('p', { class: 'topbar-sub back-pad num' }, `全 ${deck.words.length}語 ・ 覚えた ${counts.learned}語 ・ 苦手 ${counts.weak}語`),
+      el('div', { class: 'lib' }, sectionRows.length ? sectionRows : el('p', { class: 'empty' }, 'まだ単語がありません')),
+      el(
+        'div',
+        { class: 'btn-row' },
+        el('button', { class: 'btn', onclick: () => openWordSheet(store, { deckId: deck.id, onChange: refresh }) }, el('span', { html: icons.plus }), '単語を追加'),
+        el('button', { class: 'btn', onclick: () => go('import', { deck: deck.id }) }, el('span', { html: icons.upload }), 'まとめて追加'),
+      ),
       el(
         'section',
         { class: 'section' },
         el('div', { class: 'section-head' }, el('h2', {}, '単語一覧'), countLabel),
-        search,
+        el(
+          'label',
+          { class: 'search' },
+          el('span', { html: icons.search }),
+          el('input', {
+            class: 'input',
+            id: 'deck-search',
+            type: 'search',
+            placeholder: '単語・意味で検索',
+            'aria-label': '単語・意味で検索',
+            oninput: (e) => {
+              query = normalizeText(e.target.value);
+              shown = PAGE;
+              renderList();
+            },
+          }),
+        ),
         el('div', { class: 'chips', role: 'group', 'aria-label': '絞り込み' }, chipButtons),
         list,
         more,
       ),
-      manage,
+      el(
+        'section',
+        { class: 'section' },
+        el('div', { class: 'section-head' }, el('h2', {}, '単語帳の管理')),
+        el(
+          'div',
+          { class: 'btn-row' },
+          el('button', { class: 'btn btn-sm', onclick: rename }, el('span', { html: icons.edit }), '名前を変更'),
+          el('button', { class: 'btn btn-sm', onclick: exportCSV }, el('span', { html: icons.download }), 'CSVで書き出す'),
+          el('button', { class: 'btn btn-sm', onclick: resetStats }, '学習記録をリセット'),
+          el('button', { class: 'btn btn-sm btn-danger', onclick: remove }, el('span', { html: icons.trash }), '削除'),
+        ),
+      ),
     ),
   };
 }
 
+/** セクションの始め方を選ぶ */
+function sectionSheet(ctx, deck, sec) {
+  const { store } = ctx;
+  let kind = 'study';
+  const at = continueIndex(sec.words, store.getState);
+  const weakCount = sec.words.filter((w) => store.state(w.id)?.weak).length;
+  const label = `${sec.from}〜${sec.to}`;
+  const start = (how) => {
+    const ids = sectionQueue(sec.words, store.getState, how);
+    sheet.close();
+    startSession(ctx, { kind, mode: 'list', deck: deck.id, ids, title: `${label}（${SECTION_STARTS[how]}）` });
+  };
+  const option = (how, sub, disabled = false) =>
+    el('button', { class: 'sheet-option', type: 'button', disabled, onclick: () => start(how) }, el('div', {}, el('b', {}, SECTION_STARTS[how]), el('span', {}, sub)), el('span', { html: icons.chevron }));
+  const sheet = openSheet({
+    title: `${deck.name} ${label}`,
+    content: el(
+      'div',
+      { class: 'steps' },
+      segmented({
+        label: '学習のしかた',
+        value: kind,
+        options: [
+          { value: 'study', label: 'スワイプ' },
+          { value: 'quiz', label: '4択クイズ' },
+        ],
+        onChange: (v) => (kind = v),
+      }),
+      option('start', `${sec.words.length}語を順番に`),
+      option('continue', sec.words.every((w) => store.state(w.id)?.seen) ? 'すべて学習済み（最初から）' : `${sec.from + at}語目から`),
+      option('weak', `${weakCount}語`, weakCount === 0),
+      option('random', 'この範囲をシャッフル'),
+    ),
+  });
+}

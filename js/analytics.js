@@ -1,34 +1,38 @@
-// 学習データの集計（分析画面・ホーム画面で使う）
+// 学習データの集計（ホーム・分析画面で使う）
 
-import { DAY, dayKey } from './util.js';
-import { MASTERY_KEYS, mastery, weakness, weakReasons, WEAK_THRESHOLD, isDue } from './srs.js';
+import { DAY, dayKey, looksSimilar, startOfDay } from './util.js';
+import { status } from './srs.js';
 
 export function overview(words, getState, daily = {}, now = Date.now()) {
-  const counts = Object.fromEntries(MASTERY_KEYS.map((k) => [k, 0]));
+  const counts = { new: 0, review: 0, weak: 0, learned: 0 };
   let correct = 0;
   let answers = 0;
-  let due = 0;
-  let weak = 0;
+  let miss = 0;
+  let slow = 0;
   for (const word of words) {
     const s = getState(word.id);
-    counts[mastery(s)] += 1;
+    counts[status(s)] += 1;
     if (s?.seen) {
       correct += s.correct;
       answers += s.seen;
-      if (isDue(s, now)) due += 1;
-      if (weakness(s) >= WEAK_THRESHOLD) weak += 1;
+      if (s.weak === 'miss') miss += 1;
+      if (s.weak === 'slow') slow += 1;
     }
   }
+  const total = words.length;
+  const studied = total - counts.new;
+  const today = daily[dayKey(now)] || {};
   return {
-    total: words.length,
-    studied: words.length - counts.new,
+    total,
+    studied,
     counts,
+    completion: total ? studied / total : 0,
     answers,
     accuracy: answers ? correct / answers : null,
-    due,
-    weak,
+    miss,
+    slow,
     streak: streakDays(daily, now),
-    today: daily[dayKey(now)] || { a: 0, c: 0 },
+    today: { answers: today.a || 0, correct: today.c || 0, words: (today.u || []).length, learned: today.g || 0 },
   };
 }
 
@@ -44,29 +48,56 @@ export function streakDays(daily = {}, now = Date.now()) {
   return days;
 }
 
-export function dailySeries(daily = {}, days = 14, now = Date.now()) {
+export const CAL_METRICS = {
+  answers: { label: '回答数', value: (d) => d?.a || 0 },
+  learned: { label: '覚えた単語', value: (d) => d?.g || 0 },
+  missed: { label: '間違えた単語', value: (d) => (d?.m || []).length },
+};
+
+/** 月曜はじまりの月カレンダー。空白のマスは null */
+export function monthGrid(year, month, daily = {}, now = Date.now()) {
+  const first = new Date(year, month, 1);
+  const lead = (first.getDay() + 6) % 7;
+  const days = new Date(year, month + 1, 0).getDate();
+  const today = startOfDay(now);
+  const cells = Array.from({ length: lead }, () => null);
+  for (let d = 1; d <= days; d++) {
+    const time = new Date(year, month, d).getTime();
+    const key = dayKey(time);
+    cells.push({ day: d, key, time, today: time === today, future: time > today, data: daily[key] || null });
+  }
+  return cells;
+}
+
+/** 表示する月（今月から過去へ count か月） */
+export function recentMonths(count = 3, now = Date.now()) {
+  const d = new Date(now);
   const out = [];
-  for (let i = days - 1; i >= 0; i--) {
-    const t = now - i * DAY;
-    const key = dayKey(t);
-    const d = daily[key] || { a: 0, c: 0 };
-    out.push({ key, date: new Date(t), answers: d.a || 0, correct: d.c || 0 });
+  for (let i = count - 1; i >= 0; i--) {
+    const m = new Date(d.getFullYear(), d.getMonth() - i, 1);
+    out.push({ year: m.getFullYear(), month: m.getMonth() });
   }
   return out;
 }
 
-export function weakList(words, getState, { limit = 20, lookup } = {}) {
-  const byId = lookup || ((id) => words.find((w) => w.id === id));
-  return words
-    .map((word) => ({ word, state: getState(word.id) }))
-    .filter(({ state }) => state?.seen && weakness(state) >= WEAK_THRESHOLD)
-    .map((item) => ({ ...item, score: weakness(item.state) }))
-    .sort((a, b) => b.score - a.score || b.state.wrong - a.state.wrong)
-    .slice(0, limit)
-    .map((item) => ({ ...item, reasons: weakReasons(item.word, item.state, { lookup: byId, neighbors: words }) }));
+/** 苦手の内訳 */
+export function weakBreakdown(words, getState) {
+  const out = { miss: 0, slow: 0, over: 0, lapse: 0, similar: 0 };
+  const weakWords = [];
+  for (const word of words) {
+    const s = getState(word.id);
+    if (!s?.weak) continue;
+    weakWords.push(word);
+    if (s.weak === 'miss') out.miss += 1;
+    if (s.weak === 'slow') out.slow += 1;
+    if (s.over > 0) out.over += 1;
+    if (s.lapses > 0) out.lapse += 1;
+  }
+  out.similar = weakWords.filter((w) => words.some((o) => o.id !== w.id && looksSimilar(o.term, w.term))).length;
+  return out;
 }
 
-/** クイズで取り違えた組み合わせ（A→B と B→A はまとめる） */
+/** 4択で取り違えた組み合わせ（A→B と B→A はまとめる） */
 export function confusionPairs(words, getState, { limit = 10 } = {}) {
   const ids = new Set(words.map((w) => w.id));
   const byId = new Map(words.map((w) => [w.id, w]));

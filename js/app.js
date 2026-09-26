@@ -5,24 +5,24 @@ import { el } from './util.js';
 import { icons } from './icons.js';
 import { toast } from './ui.js';
 import * as home from './views/home.js';
-import * as decks from './views/decks.js';
+import * as library from './views/library.js';
 import * as deck from './views/deck.js';
 import * as importer from './views/import.js';
-import * as swipe from './views/swipe.js';
+import * as study from './views/study.js';
 import * as quiz from './views/quiz.js';
-import * as result from './views/result.js';
-import * as stats from './views/stats.js';
+import * as clear from './views/clear.js';
+import * as weak from './views/weak.js';
+import * as analysis from './views/analysis.js';
 import * as settings from './views/settings.js';
 
-const VIEWS = { home, decks, deck, import: importer, swipe, quiz, result, stats, settings };
+const VIEWS = { home, library, deck, import: importer, study, quiz, clear, weak, analysis, settings };
 const TABS = [
   { id: 'home', label: 'ホーム', icon: icons.home },
-  { id: 'decks', label: '単語帳', icon: icons.decks },
-  { id: 'stats', label: '分析', icon: icons.chart },
-  { id: 'settings', label: '設定', icon: icons.settings },
+  { id: 'library', label: 'ライブラリ', icon: icons.library },
+  { id: 'analysis', label: '分析', icon: icons.chart },
 ];
-// 学習中はタブを隠して集中できるようにする
-const TAB_OF = { home: 'home', decks: 'decks', deck: 'decks', import: 'decks', stats: 'stats', settings: 'settings' };
+// 学習中（study / quiz / clear）はタブを隠して集中できるようにする
+const TAB_OF = { home: 'home', settings: 'home', library: 'library', deck: 'library', import: 'library', weak: 'library', analysis: 'analysis' };
 
 const store = new Store();
 const viewRoot = document.getElementById('view');
@@ -53,7 +53,8 @@ function go(name, params = {}) {
   current = { name: view, params, cleanup: out.cleanup };
   viewRoot.replaceChildren(out.el);
   viewRoot.scrollTop = 0;
-  const tab = TAB_OF[view];
+  const onboarding = view === 'home' && !store.decks.length;
+  const tab = onboarding ? null : TAB_OF[view];
   tabbar.hidden = !tab;
   document.documentElement.dataset.mode = tab ? 'browse' : 'study';
   for (const button of tabbar.querySelectorAll('.tab')) {

@@ -117,13 +117,3 @@ export function segmented({ options, value, onChange, label, className = 'segmen
   const buttonFor = (v) => buttons[options.findIndex((o) => o.value === v)];
   return el('div', { class: className, role: 'group', 'aria-label': label }, buttons);
 }
-
-export function masteryBar(counts, total, { large = false } = {}) {
-  const bar = el('div', { class: large ? 'mbar mbar-lg' : 'mbar', role: 'img' });
-  for (const key of ['mastered', 'review', 'learning', 'new']) {
-    const n = counts[key] || 0;
-    if (n) bar.append(el('span', { class: `m-${key}`, style: { flex: `${n} 0 0` } }));
-  }
-  bar.setAttribute('aria-label', `マスター${counts.mastered || 0}語、定着中${counts.review || 0}語、学習中${counts.learning || 0}語、未学習${counts.new || 0}語（全${total}語）`);
-  return bar;
-}
