@@ -4,7 +4,7 @@ import { explainWeakness, hasApiKey, toUserMessage } from "@/lib/claude";
 import type { WeaknessKind } from "@/lib/types";
 
 export const runtime = "nodejs";
-export const maxDuration = 120;
+export const maxDuration = 60;
 
 const KINDS: WeaknessKind[] = ["listening", "vocab", "grammar"];
 

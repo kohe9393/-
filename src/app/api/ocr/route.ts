@@ -8,7 +8,7 @@ import {
 } from "@/lib/claude";
 
 export const runtime = "nodejs";
-export const maxDuration = 120;
+export const maxDuration = 60;
 
 const ALLOWED: ImageMediaType[] = [
   "image/jpeg",

@@ -11,8 +11,11 @@ import { normalizeText } from "@/lib/segment";
 import type { MaterialSource } from "@/lib/types";
 
 export const runtime = "nodejs";
-/** 長い本文だと解析に時間がかかるので上限を延ばす。 */
-export const maxDuration = 300;
+/**
+ * 長い本文だと解析に時間がかかるので上限を延ばす。
+ * 60 秒は Vercel の無料プランの上限。有料プランなら 300 まで上げられる。
+ */
+export const maxDuration = 60;
 
 const NO_KEY_NOTICE =
   "ANTHROPIC_API_KEY が設定されていないため、対訳・語義なしの簡易教材として取り込みました。音読と弱点マークはこのまま使えます。";

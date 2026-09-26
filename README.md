@@ -45,6 +45,25 @@ npm run dev                  # http://localhost:3000
 | `npm start` | 本番サーバー |
 | `npm run typecheck` | 型チェック |
 
+## Vercel にデプロイする（共有できる URL にする）
+
+ビルド設定は不要です。Next.js として自動検出されます。
+
+1. [vercel.com/new](https://vercel.com/new) を開いて GitHub アカウントを接続する
+2. このリポジトリを Import する
+3. **Project Name** を入力する — リポジトリ名が `-` なので自動では決まりません（`script-flow` など）
+4. **Environment Variables** に `ANTHROPIC_API_KEY` を追加する（省略可。入れない場合はサンプルと音読だけが動きます）
+5. Deploy
+
+`https://<プロジェクト名>.vercel.app` が発行され、誰でも開ける URL になります。
+
+**本番ブランチに注意。** Vercel は既定でリポジトリのデフォルトブランチ（`main`）をデプロイします。
+アプリのコードが作業ブランチにあるうちは、先に main へマージするか、
+Vercel の Settings → Git → Production Branch で作業ブランチを指定してください。
+
+**API のタイムアウト。** `analyze` / `explain` / `ocr` の `maxDuration` は 60 秒にしてあります
+（Vercel 無料プランの上限）。有料プランなら各 route.ts の値を 300 まで上げられます。
+
 ## 構成
 
 Next.js (App Router) + TypeScript + Tailwind CSS v4。教材・進捗・弱点マークは
